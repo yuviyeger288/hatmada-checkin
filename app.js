@@ -20,13 +20,33 @@
   var el = function (id) { return document.getElementById(id); };
   var screens = ["gate", "q1", "q2", "q3", "done", "loading"];
 
+  var STEP = { q1: 1, q2: 2, q3: 3 };
+  var STEPS_TOTAL = 3;
+
   function show(id) {
     screens.forEach(function (s) {
       var n = el(s);
       if (n) n.hidden = (s !== id);
     });
+
+    var step = STEP[id];
+    var head = el("qhead");
+    if (step) {
+      el("step-text").textContent = "שאלה " + step + " מתוך " + STEPS_TOTAL;
+      el("progress-fill").style.width = (step / STEPS_TOTAL * 100) + "%";
+      el("back").hidden = (step === 1);
+      head.hidden = false;
+    } else {
+      head.hidden = true;
+    }
+
     window.scrollTo(0, 0);
   }
+
+  el("back").addEventListener("click", function () {
+    if (!el("q3").hidden) show("q2");
+    else if (!el("q2").hidden) show("q1");
+  });
 
   /* ---------- אחסון מקומי, שלא יפיל את הדף ---------- */
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
