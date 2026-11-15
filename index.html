@@ -100,16 +100,15 @@
       <p class="eyebrow" id="done-eyebrow">הדרך שלך</p>
 
       <div class="card journey">
+        <p class="destination" id="destination"></p>
+
+        <svg class="climb" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <line class="climb-rest" x1="298" y1="174" x2="42" y2="30"/>
+          <line class="climb-fill" id="climb-fill" x1="298" y1="174" x2="298" y2="174"/>
+          <circle class="climb-goal" id="climb-goal" cx="42" cy="30" r="10"/>
+        </svg>
+
         <p class="count"><span id="count-filled">0</span> <span class="of">מתוך</span> <span id="count-total">40</span></p>
-        <div class="line" aria-label="הקו שלך">
-          <div class="line-fill" id="line-fill"></div>
-          <div class="line-ticks" id="line-ticks" aria-hidden="true"></div>
-          <div class="line-goal" id="line-goal" aria-hidden="true"></div>
-        </div>
-        <div class="goal-wrap">
-          <span class="goal-stem" aria-hidden="true"></span>
-          <p class="destination" id="destination"></p>
-        </div>
       </div>
 
       <p id="pending" class="msg" hidden>הדיווח יישלח כשתהיה רשת.</p>

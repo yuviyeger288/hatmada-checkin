@@ -224,12 +224,15 @@
     var filled = state.checkins.filter(function (k) { return k.attended === "yes"; }).length;
     if (filled > total) filled = total;
 
-    el("line-fill").style.width = (total ? (filled / total * 100) : 0) + "%";
-    el("line-goal").classList.toggle("reached", total > 0 && filled >= total);
+    // הקו מטפס מהפינה הימנית־תחתונה אל היעד שבשמאל־עליון
+    var X0 = 298, Y0 = 174, X1 = 42, Y1 = 30;
+    var t = total ? (filled / total) : 0;
 
-    var ticks = el("line-ticks");
-    ticks.innerHTML = "";
-    for (var w = 0; w < weeks; w++) ticks.appendChild(document.createElement("span"));
+    var fill = el("climb-fill");
+    fill.setAttribute("x2", String(X0 + (X1 - X0) * t));
+    fill.setAttribute("y2", String(Y0 + (Y1 - Y0) * t));
+
+    el("climb-goal").classList.toggle("reached", total > 0 && filled >= total);
 
     el("count-filled").textContent = String(filled);
     el("count-total").textContent = String(total);
@@ -263,20 +266,17 @@
     try {
       history.replaceState(null, "", location.pathname + "?c=" + encodeURIComponent(code));
     } catch (e) {}
-    pinCodeToManifest(code);
+    try {
+      // גיבוי לאנדרואיד: עוגייה נשמרת גם כשהאפליקציה נפתחת מהאייקון
+      document.cookie = "bhc=" + encodeURIComponent(code) + ";path=/;max-age=31536000;samesite=lax";
+    } catch (e) {}
   }
 
-  function pinCodeToManifest(code) {
-    var link = document.querySelector('link[rel="manifest"]');
-    if (!link) return;
-    fetch("manifest.webmanifest")
-      .then(function (r) { return r.json(); })
-      .then(function (m) {
-        m.start_url = "./?c=" + encodeURIComponent(code);
-        var url = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: "application/manifest+json" }));
-        link.setAttribute("href", url);
-      })
-      .catch(function () {});
+  function codeFromCookie() {
+    try {
+      var m = document.cookie.match(/(?:^|;\s*)bhc=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : "";
+    } catch (e) { return ""; }
   }
 
   /* ================= הוספה למסך הבית ================= */
@@ -351,7 +351,7 @@
 
   function boot() {
     var params = new URLSearchParams(location.search);
-    var code = (params.get("c") || lsGet(KEY_CODE) || "").trim().toLowerCase();
+    var code = (params.get("c") || lsGet(KEY_CODE) || codeFromCookie() || "").trim().toLowerCase();
     if (!code) { openGate(); return; }
     flushPending().then(function () { tryCode(code); });
   }

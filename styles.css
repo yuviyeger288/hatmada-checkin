@@ -210,84 +210,15 @@ body{
 
 button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
-/* ---------- הקו ---------- */
+/* ---------- הקו העולה ---------- */
 
-.card{align-items:stretch;gap:12px}
+.journey{align-items:stretch;gap:14px}
 
-.count{
-  margin:0;
-  font-size:15px;
-  font-weight:700;
-  color:var(--text-muted);
-  font-variant-numeric:tabular-nums;
-}
-.count #count-filled{font-size:28px;font-weight:800;color:var(--text)}
-.count .of{font-weight:600}
-
-/* הקו מתמלא מימין לשמאל ומתקרב ליעד שבקצה השמאלי */
-.line{
-  position:relative;
-  height:18px;
-  border-radius:999px;
-  background:var(--background);
-  border:1px solid var(--card-border);
-}
-
-.line-fill{
-  position:absolute;
-  top:0; bottom:0; right:0;
-  width:0;
-  background:var(--primary);
-  border-radius:999px;
-  transition:width .6s ease;
-}
-
-.line-ticks{
-  position:absolute;
-  inset:0;
-  display:flex;
-  flex-direction:row;
-  direction:rtl;
-  border-radius:999px;
-  overflow:hidden;
-}
-.line-ticks span{
-  flex:1 1 0;
-  border-left:1px solid var(--card-border);
-}
-.line-ticks span:last-child{border-left:0}
-
-/* הנקודה שבסוף הקו — מה שהוא מתקרב אליו */
-/* הנקודה שבסוף הקו — מה שהוא מתקרב אליו */
-.line-goal{
-  position:absolute;
-  top:50%;
-  left:-6px;
-  width:22px;
-  height:22px;
-  margin-top:-11px;
-  border-radius:50%;
-  background:var(--card);
-  border:3px solid var(--primary);
-}
-.line-goal.reached{background:var(--primary)}
-
-/* היעד תלוי מתחת לנקודה, מחובר אליה בקו דק */
-.goal-wrap{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-}
-
-.goal-stem{
-  width:2px;
-  height:18px;
-  background:var(--primary);
-  margin-left:4px;
-}
-
+/* המשפט יושב למעלה, בצד שאליו הקו מטפס */
 .destination{
   margin:0;
+  align-self:flex-end;
+  max-width:96%;
   background:var(--card-selected);
   border:1px solid var(--primary);
   border-radius:var(--r-md);
@@ -298,6 +229,43 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
   color:var(--primary-dark);
   text-wrap:balance;
 }
+
+.climb{
+  width:100%;
+  height:auto;
+  max-width:100%;
+  display:block;
+  overflow:visible;
+}
+
+.climb-rest{
+  stroke:var(--card-border);
+  stroke-width:10;
+  stroke-linecap:round;
+}
+
+.climb-fill{
+  stroke:var(--primary);
+  stroke-width:10;
+  stroke-linecap:round;
+  transition:all .6s ease;
+}
+
+.climb-week{fill:var(--card);stroke:var(--card-border);stroke-width:2}
+.climb-week.passed{fill:var(--card);stroke:var(--primary)}
+
+.climb-goal{fill:var(--card);stroke:var(--primary);stroke-width:4}
+.climb-goal.reached{fill:var(--primary)}
+
+.count{
+  margin:0;
+  font-size:15px;
+  font-weight:700;
+  color:var(--text-muted);
+  font-variant-numeric:tabular-nums;
+}
+.count #count-filled{font-size:28px;font-weight:800;color:var(--text)}
+.count .of{font-weight:600}
 
 /* ---------- הוספה למסך הבית ---------- */
 

@@ -4,7 +4,6 @@
   "description": "צ׳ק־אין יומי קצר, והדרך שאתה בונה.",
   "lang": "he",
   "dir": "rtl",
-  "start_url": ".",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
