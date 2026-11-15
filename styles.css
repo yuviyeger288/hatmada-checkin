@@ -214,18 +214,14 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
 .journey{align-items:stretch;gap:14px}
 
-/* המשפט יושב למעלה, בצד שאליו הקו מטפס */
+/* המשפט יושב למעלה, בצד שאליו הקו מטפס — טקסט נקי, בלי מסגרת */
 .destination{
   margin:0;
   align-self:flex-end;
   max-width:96%;
-  background:var(--card-selected);
-  border:1px solid var(--primary);
-  border-radius:var(--r-md);
-  padding:12px 14px;
-  font-size:clamp(17px,4.2vw,19px);
+  font-size:clamp(19px,4.6vw,22px);
   font-weight:800;
-  line-height:1.4;
+  line-height:1.35;
   color:var(--primary-dark);
   text-wrap:balance;
 }
