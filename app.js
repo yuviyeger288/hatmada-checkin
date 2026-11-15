@@ -71,6 +71,12 @@
     });
   }
 
+  /* הכתובת נקראת פעם אחת בטעינה, לפני שהקוד מנקה אותה */
+  var initialParams = (function () {
+    try { return new URLSearchParams(location.search); }
+    catch (e) { return { get: function () { return null; } }; }
+  })();
+
   /* ---------- מצב ---------- */
   var state = {
     code: null,
@@ -244,6 +250,18 @@
     show("done");
   }
 
+  // חזרה לשאלות ממסך הקו
+  el("again-btn").addEventListener("click", function () {
+    state.answers = { attended: null, blockers: [], decided: "" };
+    el("hard").value = "";
+    el("decided").value = "";
+    Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
+      o.setAttribute("aria-pressed", "false");
+    });
+    el("again").hidden = false;
+    show("q1");
+  });
+
   /* ================= הקוד שורד את ההתקנה ================= */
 
   /* האייפון שומר את הכתובת שבמסך ברגע ההוספה, ואנדרואיד שומר את
@@ -297,9 +315,7 @@
 
   function needsWelcome() {
     // ?welcome=1 מאלץ את מסך ההתקנה, לבדיקות
-    try {
-      if (new URLSearchParams(location.search).get("welcome") === "1") return true;
-    } catch (e) {}
+    if (initialParams.get("welcome") === "1") return true;
     return !isStandalone() && !lsGet(KEY_WELCOME);
   }
 
@@ -343,8 +359,7 @@
   }
 
   function boot() {
-    var params = new URLSearchParams(location.search);
-    var code = (params.get("c") || lsGet(KEY_CODE) || codeFromCookie() || "").trim().toLowerCase();
+    var code = (initialParams.get("c") || lsGet(KEY_CODE) || codeFromCookie() || "").trim().toLowerCase();
     if (!code) { openGate(); return; }
     flushPending().then(function () { tryCode(code); });
   }
