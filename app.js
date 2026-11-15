@@ -121,7 +121,7 @@
         state.code = code;
         state.client = rows[0];
         lsSet(KEY_CODE, code);
-        history.replaceState(null, "", location.pathname);
+        pinCodeToUrl(code);
         return loadCheckins().then(start);
       })
       .catch(function (err) {
@@ -287,6 +287,32 @@
     });
     show("q1");
   });
+
+  /* ================= הקוד שורד את ההתקנה ================= */
+
+  /* האייפון שומר את הכתובת שבמסך ברגע ההוספה, ואנדרואיד שומר את
+     start_url שבמניפסט. שניהם חייבים לשאת את הקוד, אחרת האפליקציה
+     במסך הבית נפתחת בלי לדעת מי זה — ובאייפון האחסון שלה נפרד מספארי. */
+
+  function pinCodeToUrl(code) {
+    try {
+      history.replaceState(null, "", location.pathname + "?c=" + encodeURIComponent(code));
+    } catch (e) {}
+    pinCodeToManifest(code);
+  }
+
+  function pinCodeToManifest(code) {
+    var link = document.querySelector('link[rel="manifest"]');
+    if (!link) return;
+    fetch("manifest.webmanifest")
+      .then(function (r) { return r.json(); })
+      .then(function (m) {
+        m.start_url = "./?c=" + encodeURIComponent(code);
+        var url = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: "application/manifest+json" }));
+        link.setAttribute("href", url);
+      })
+      .catch(function () {});
+  }
 
   /* ================= הוספה למסך הבית ================= */
 
