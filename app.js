@@ -6,9 +6,10 @@
 
   var KEY_CODE    = "bh.code";
   var KEY_PENDING = "bh.pending";
+  var KEY_WELCOME = "bh.welcome.done";
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["gate", "q1", "q2", "q3", "done", "loading"];
+  var screens = ["welcome", "gate", "q1", "q2", "q3", "done", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -84,7 +85,6 @@
     var msg = el("gate-msg");
     if (message) { msg.textContent = message; msg.hidden = false; }
     else { msg.hidden = true; }
-    placeInstall("gate");
     show("gate");
     el("gate-code").focus();
   }
@@ -225,6 +225,7 @@
     if (filled > total) filled = total;
 
     el("line-fill").style.width = (total ? (filled / total * 100) : 0) + "%";
+    el("line-goal").classList.toggle("reached", total > 0 && filled >= total);
 
     var ticks = el("line-ticks");
     ticks.innerHTML = "";
@@ -290,7 +291,7 @@
 
   window.addEventListener("appinstalled", function () {
     deferredPrompt = null;
-    el("install").hidden = true;
+    if (!el("welcome").hidden) leaveWelcome();
   });
 
   function isStandalone() {
@@ -316,23 +317,9 @@
     });
   }
 
-  var installPlaced = false;
-
-  function placeInstall(screenId) {
-    if (installPlaced) return;
-    var box = el("install");
-    if (!box) return;
-    el(screenId).appendChild(box);
-    installPlaced = true;
-    renderInstall();
-  }
-
   function renderInstall() {
-    var box = el("install");
     var btn = el("install-btn");
     var arrow = el("install-arrow");
-
-    if (isStandalone()) { box.hidden = true; return; }
 
     if (deferredPrompt) {
       steps([]);
@@ -359,15 +346,25 @@
       arrow.textContent = "↑";
       arrow.classList.add("up");
     }
-    box.hidden = false;
   }
+
+  function needsWelcome() {
+    return !isStandalone() && !lsGet(KEY_WELCOME);
+  }
+
+  function leaveWelcome() {
+    lsSet(KEY_WELCOME, "1");
+    goToCheckin();
+  }
+
+  el("welcome-next").addEventListener("click", leaveWelcome);
 
   el("install-btn").addEventListener("click", function () {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(function () {
       deferredPrompt = null;
-      el("install").hidden = true;
+      leaveWelcome();
     });
   });
 
@@ -379,9 +376,18 @@
       n.textContent = t.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
     });
 
+    if (needsWelcome()) {
+      renderInstall();
+      show("welcome");
+      return;
+    }
+    goToCheckin();
+  }
+
+  function goToCheckin() {
     var reported = state.checkins.some(function (k) { return k.day === today(); });
-    if (reported) { renderDone(!!lsGet(KEY_PENDING)); placeInstall("done"); }
-    else { show("q1"); placeInstall("q1"); }
+    if (reported) renderDone(!!lsGet(KEY_PENDING));
+    else show("q1");
   }
 
   function boot() {

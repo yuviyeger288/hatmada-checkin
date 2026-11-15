@@ -258,61 +258,48 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .line-ticks span:last-child{border-left:0}
 
 /* הנקודה שבסוף הקו — מה שהוא מתקרב אליו */
+/* הנקודה שבסוף הקו — מה שהוא מתקרב אליו */
 .line-goal{
   position:absolute;
   top:50%;
-  left:-5px;
-  width:20px;
-  height:20px;
-  margin-top:-10px;
+  left:-6px;
+  width:22px;
+  height:22px;
+  margin-top:-11px;
   border-radius:50%;
   background:var(--card);
   border:3px solid var(--primary);
 }
+.line-goal.reached{background:var(--primary)}
 
-.goal-end{
+/* היעד תלוי מתחת לנקודה, מחובר אליה בקו דק */
+.goal-wrap{
   display:flex;
   flex-direction:column;
-  gap:2px;
-  align-items:flex-start;
-  text-align:left;
-  max-width:88%;
-  margin-right:auto;
-  margin-left:0;
+  align-items:flex-end;
 }
 
-.toward{
-  margin:0;
-  font-size:13px;
-  font-weight:700;
-  color:var(--text-muted);
+.goal-stem{
+  width:2px;
+  height:18px;
+  background:var(--primary);
+  margin-left:4px;
 }
 
 .destination{
   margin:0;
-  font-size:clamp(18px,4.4vw,21px);
+  background:var(--card-selected);
+  border:1px solid var(--primary);
+  border-radius:var(--r-md);
+  padding:12px 14px;
+  font-size:clamp(17px,4.2vw,19px);
   font-weight:800;
-  line-height:1.35;
+  line-height:1.4;
   color:var(--primary-dark);
   text-wrap:balance;
 }
 
 /* ---------- הוספה למסך הבית ---------- */
-
-.install{
-  margin-top:8px;
-  background:var(--card);
-  border:1px solid var(--card-border);
-  border-radius:var(--r-lg);
-  padding:16px 16px 20px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-.install[hidden]{display:none}
-
-.install-title{margin:0;font-weight:800;font-size:17px;color:var(--primary)}
-.install-why{margin:0;color:var(--text-muted);font-size:15px}
 
 .install-steps{
   margin:4px 0 0;
