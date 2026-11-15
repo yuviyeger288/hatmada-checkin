@@ -1,5 +1,5 @@
 /* מטמין את המעטפת בלבד. הנתונים תמיד מהרשת. */
-var CACHE = "bh-shell-v7";
+var CACHE = "bh-shell-v8";
 var SHELL = [
   "./",
   "index.html",
@@ -11,8 +11,18 @@ var SHELL = [
   "icon-512.png"
 ];
 
+/* GitHub Pages מגיש כל קובץ עם max-age=600, אז בקשה רגילה עלולה לחזור
+   מהמטמון של הדפדפן ולא מהרשת. כל בקשה כאן עוקפת אותו במפורש. */
+function fresh(req) {
+  return new Request(req, { cache: "reload" });
+}
+
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () {
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return Promise.all(SHELL.map(function (u) {
+      return fetch(u, { cache: "reload" }).then(function (r) { return c.put(u, r); });
+    }));
+  }).then(function () {
     return self.skipWaiting();
   }));
 });
@@ -30,7 +40,7 @@ self.addEventListener("fetch", function (e) {
   if (url.origin !== location.origin) return;       // גופנים ו-Supabase לא נוגעים במטמון
 
   e.respondWith(
-    fetch(req)
+    fetch(fresh(req))
       .then(function (res) {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(req, copy); });

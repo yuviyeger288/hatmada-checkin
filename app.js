@@ -393,7 +393,21 @@
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function () {});
+      // updateViaCache:"none" — שגם קובץ ה-sw עצמו לא יישלף מהמטמון של הדפדפן
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+        .then(function (reg) {
+          reg.update();
+          // גרסה חדשה שהשתלטה בזמן שהדף פתוח — טוענים אותה מיד.
+          // בהתקנה ראשונה אין עדיין controller, ואז לא מרעננים.
+          var hadController = !!navigator.serviceWorker.controller;
+          var reloading = false;
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (!hadController || reloading) return;
+            reloading = true;
+            location.reload();
+          });
+        })
+        .catch(function () {});
     });
   }
 
