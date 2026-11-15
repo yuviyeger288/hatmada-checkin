@@ -313,14 +313,13 @@
     el("install-btn").hidden = !deferredPrompt;
   }
 
+  // מסך ההתקנה מופיע בכל פתיחה כל עוד האתר לא רץ מהאייקון.
+  // ברגע שהוא מותקן — הוא לא יופיע שוב לעולם.
   function needsWelcome() {
-    // ?welcome=1 מאלץ את מסך ההתקנה, לבדיקות
-    if (initialParams.get("welcome") === "1") return true;
-    return !isStandalone() && !lsGet(KEY_WELCOME);
+    return !isStandalone();
   }
 
   function leaveWelcome() {
-    lsSet(KEY_WELCOME, "1");
     goToCheckin();
   }
 
