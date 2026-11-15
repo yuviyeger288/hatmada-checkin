@@ -400,19 +400,11 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", function () {
       // updateViaCache:"none" — שגם קובץ ה-sw עצמו לא יישלף מהמטמון של הדפדפן
+      // updateViaCache:"none" — שגם קובץ ה-sw עצמו לא יישלף מהמטמון של הדפדפן.
+      // אין כאן רענון אוטומטי בכוונה: כל בקשה כבר עוקפת את המטמון,
+      // ורענון שמופעל מאירוע השתלטות יוצר לולאה.
       navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
-        .then(function (reg) {
-          reg.update();
-          // גרסה חדשה שהשתלטה בזמן שהדף פתוח — טוענים אותה מיד.
-          // בהתקנה ראשונה אין עדיין controller, ואז לא מרעננים.
-          var hadController = !!navigator.serviceWorker.controller;
-          var reloading = false;
-          navigator.serviceWorker.addEventListener("controllerchange", function () {
-            if (!hadController || reloading) return;
-            reloading = true;
-            location.reload();
-          });
-        })
+        .then(function (reg) { reg.update(); })
         .catch(function () {});
     });
   }
