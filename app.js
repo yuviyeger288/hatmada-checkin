@@ -225,19 +225,15 @@
     var filled = state.checkins.filter(function (k) { return k.attended === "yes"; }).length;
     if (filled > total) filled = total;
 
-    var track = el("track");
-    track.innerHTML = "";
-    track.style.gridTemplateColumns = "repeat(" + perWeek + ", 1fr)";
-    track.style.maxWidth = (perWeek * 54) + "px";
-    for (var i = 0; i < total; i++) {
-      var cell = document.createElement("div");
-      cell.className = "cell" + (i < filled ? " filled" : "");
-      track.appendChild(cell);
-    }
+    el("line-fill").style.width = (total ? (filled / total * 100) : 0) + "%";
+
+    var ticks = el("line-ticks");
+    ticks.innerHTML = "";
+    for (var w = 0; w < weeks; w++) ticks.appendChild(document.createElement("span"));
 
     el("count-filled").textContent = String(filled);
     el("count-total").textContent = String(total);
-    el("identity").textContent = c.identity_sentence || "";
+    el("destination").textContent = c.destination || c.identity_sentence || "";
     el("pending").hidden = !pending;
 
     var reported = state.checkins.some(function (k) { return k.day === today(); });
