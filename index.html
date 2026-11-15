@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בונים התמדה</title>
+<meta name="theme-color" content="#0F1A15">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="התמדה">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&family=Assistant:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main id="app">
+
+  <!-- ====== מסך קוד ====== -->
+  <section id="gate" class="screen" hidden>
+    <h1 class="title">בונים התמדה</h1>
+    <p class="sub">הכנס את הקוד שקיבלת.</p>
+    <input id="gate-code" class="field" type="text" inputmode="latin" autocapitalize="off"
+           autocomplete="off" spellcheck="false" placeholder="קוד">
+    <p id="gate-msg" class="msg" hidden></p>
+    <button id="gate-go" class="btn">המשך</button>
+  </section>
+
+  <!-- ====== שאלה 1 ====== -->
+  <section id="q1" class="screen" hidden>
+    <p class="eyebrow">צ׳ק־אין · <span class="today"></span></p>
+    <h1 class="title">הגעת היום לאימון?</h1>
+    <div class="choices">
+      <button class="choice" data-v="yes">כן, הגעתי</button>
+      <button class="choice" data-v="no">לא הגעתי</button>
+      <button class="choice quiet" data-v="none">לא היה אימון מתוכנן</button>
+    </div>
+  </section>
+
+  <!-- ====== שאלה 2 ====== -->
+  <section id="q2" class="screen" hidden>
+    <p class="eyebrow">שאלה 2 מתוך 3</p>
+    <h1 class="title">מה היה קשה היום בלהגיע?</h1>
+    <p class="sub">אפשר לסמן כמה, ואפשר לדלג.</p>
+    <div class="choices" id="blockers"></div>
+    <button id="q2-next" class="btn">המשך</button>
+  </section>
+
+  <!-- ====== שאלה 3 ====== -->
+  <section id="q3" class="screen" hidden>
+    <p class="eyebrow">שאלה 3 מתוך 3</p>
+    <h1 class="title">מה הכריע?</h1>
+    <p class="sub">מה גרם לך ללכת, או מה גרם לך לא ללכת. משפט אחד, במילים שלך.</p>
+    <textarea id="decided" class="field area" rows="3" placeholder="משפט אחד"></textarea>
+    <button id="q3-send" class="btn">שלח</button>
+  </section>
+
+  <!-- ====== מסך ההתקדמות ====== -->
+  <section id="done" class="screen" hidden>
+    <p class="eyebrow" id="done-eyebrow">הדרך שלך</p>
+    <div class="track" id="track" aria-label="המסלול"></div>
+    <p class="count"><span id="count-filled">0</span> <span class="of">מתוך</span> <span id="count-total">40</span></p>
+    <p class="identity" id="identity"></p>
+    <p id="pending" class="msg" hidden>הדיווח יישלח כשתהיה רשת.</p>
+    <button id="redo" class="btn ghost">לתקן את הדיווח של היום</button>
+  </section>
+
+  <!-- ====== טעינה ====== -->
+  <section id="loading" class="screen">
+    <p class="sub center">רגע…</p>
+  </section>
+
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
