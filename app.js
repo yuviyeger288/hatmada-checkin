@@ -239,22 +239,10 @@
     el("destination").textContent = c.destination || c.identity_sentence || "";
     el("pending").hidden = !pending;
 
-    var reported = state.checkins.some(function (k) { return k.day === today(); });
-    el("done-eyebrow").textContent = reported ? "דיווחת היום. הנה הדרך שלך." : "הדרך שלך";
-    el("redo").hidden = !reported;
+    el("done-eyebrow").textContent = "נרשם. הנה הדרך שלך.";
 
     show("done");
   }
-
-  el("redo").addEventListener("click", function () {
-    state.answers = { attended: null, blockers: [], decided: "" };
-    el("hard").value = "";
-    el("decided").value = "";
-    Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
-      o.setAttribute("aria-pressed", "false");
-    });
-    show("q1");
-  });
 
   /* ================= הקוד שורד את ההתקנה ================= */
 
@@ -343,10 +331,11 @@
     goToCheckin();
   }
 
+  // הקו הוא תמיד התחנה האחרונה: קודם ההתקנה, אחר כך השאלות, ורק אז הוא.
   function goToCheckin() {
     var reported = state.checkins.some(function (k) { return k.day === today(); });
-    if (reported) renderDone(!!lsGet(KEY_PENDING));
-    else show("q1");
+    el("again").hidden = !reported;
+    show("q1");
   }
 
   function boot() {
