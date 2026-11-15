@@ -74,6 +74,8 @@
     var msg = el("gate-msg");
     if (message) { msg.textContent = message; msg.hidden = false; }
     else { msg.hidden = true; }
+    el("gate").appendChild(el("install"));
+    renderInstall();
     show("gate");
     el("gate-code").focus();
   }
@@ -246,6 +248,10 @@
     el("done-eyebrow").textContent = reported ? "דיווחת היום. הנה הדרך שלך." : "הדרך שלך";
     el("redo").hidden = !reported;
 
+    // מי שעוד לא התקין רואה את ההסבר גם כאן, אחרי הדיווח
+    el("done").insertBefore(el("install"), el("redo"));
+    renderInstall();
+
     show("done");
   }
 
@@ -254,6 +260,88 @@
     buildBlockers();
     el("decided").value = "";
     show("q1");
+  });
+
+  /* ================= הוספה למסך הבית ================= */
+
+  var deferredPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    renderInstall();
+  });
+
+  window.addEventListener("appinstalled", function () {
+    deferredPrompt = null;
+    el("install").hidden = true;
+  });
+
+  function isStandalone() {
+    try {
+      return window.matchMedia("(display-mode: standalone)").matches ||
+             window.navigator.standalone === true;
+    } catch (e) { return false; }
+  }
+
+  function isIOS() {
+    var ua = navigator.userAgent || "";
+    return /iPad|iPhone|iPod/.test(ua) ||
+           (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function steps(list) {
+    var ol = el("install-steps");
+    ol.innerHTML = "";
+    list.forEach(function (html) {
+      var li = document.createElement("li");
+      li.innerHTML = html;
+      ol.appendChild(li);
+    });
+  }
+
+  function renderInstall() {
+    var box = el("install");
+    var btn = el("install-btn");
+    var arrow = el("install-arrow");
+
+    if (isStandalone()) { box.hidden = true; return; }
+
+    if (deferredPrompt) {
+      steps([]);
+      btn.hidden = false;
+      arrow.hidden = true;
+    } else if (isIOS()) {
+      steps([
+        'לחץ על כפתור השיתוף <span class="glyph">&#x2191;</span> בתחתית המסך',
+        'גלול ובחר <b>הוספה למסך הבית</b>',
+        'לחץ <b>הוסף</b> — וזהו'
+      ]);
+      btn.hidden = true;
+      arrow.hidden = false;
+      arrow.textContent = "↓";
+      arrow.classList.remove("up");
+    } else {
+      steps([
+        'פתח את התפריט <span class="glyph">&#x22EE;</span> בפינה העליונה',
+        'בחר <b>הוספה למסך הבית</b>',
+        'אשר — וזהו'
+      ]);
+      btn.hidden = true;
+      arrow.hidden = false;
+      arrow.textContent = "↑";
+      arrow.classList.add("up");
+    }
+    box.hidden = false;
+  }
+
+  el("install-btn").addEventListener("click", function () {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function () {
+      deferredPrompt = null;
+      el("install").hidden = true;
+    });
   });
 
   /* ================= הפעלה ================= */

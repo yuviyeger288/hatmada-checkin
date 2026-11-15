@@ -179,6 +179,71 @@ button:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
   line-height:1.5;
 }
 
+/* ---------- הוספה למסך הבית ---------- */
+
+.install{
+  margin-top:.6rem;
+  border:1px dashed var(--line);
+  border-radius:16px;
+  padding:1.1rem 1.2rem 1.4rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  position:relative;
+}
+.install[hidden]{display:none}
+
+.install-title{
+  margin:0;
+  font-family:var(--display);
+  font-weight:700;
+  color:var(--ember);
+  font-size:1.05rem;
+}
+.install-why{margin:0;color:var(--muted);font-size:.92rem}
+
+.install-steps{
+  margin:.3rem 0 0;
+  padding-inline-start:1.2rem;
+  display:flex;
+  flex-direction:column;
+  gap:.45rem;
+  font-size:.97rem;
+  color:var(--cream);
+}
+.install-steps li::marker{color:var(--ember);font-weight:700}
+
+.glyph{
+  display:inline-block;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-radius:7px;
+  padding:0 .45rem;
+  margin:0 .15rem;
+  font-weight:700;
+  color:var(--ember);
+}
+
+.install-arrow{
+  align-self:center;
+  margin-top:.2rem;
+  font-size:1.6rem;
+  line-height:1;
+  color:var(--ember);
+  animation:nudge-down 1.5s ease-in-out infinite;
+}
+.install-arrow.up{animation-name:nudge-up}
+
+@keyframes nudge-down{
+  0%,100%{transform:translateY(0);opacity:.45}
+  50%    {transform:translateY(7px);opacity:1}
+}
+@keyframes nudge-up{
+  0%,100%{transform:translateY(0);opacity:.45}
+  50%    {transform:translateY(-7px);opacity:1}
+}
+
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important}
+  .install-arrow{animation:none;opacity:.9}
 }
