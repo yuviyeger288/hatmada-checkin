@@ -7,16 +7,6 @@
   var KEY_CODE    = "bh.code";
   var KEY_PENDING = "bh.pending";
 
-  var BLOCKERS = [
-    "פחדתי לחזור לפציעה",
-    "חשבתי שלא אצליח להיות עד הסוף עם הקבוצה",
-    "כאב לי",
-    "הייתי עייף או שחוק",
-    "בית ספר או לוח הזמנים",
-    "סתם תירוץ קטן שאני לא יודע להסביר",
-    "שום דבר, היה קל היום"
-  ];
-
   var el = function (id) { return document.getElementById(id); };
   var screens = ["gate", "q1", "q2", "q3", "done", "loading"];
 
@@ -141,29 +131,6 @@
 
   /* ================= שלוש השאלות ================= */
 
-  function buildBlockers() {
-    var box = el("blockers");
-    box.innerHTML = "";
-    BLOCKERS.forEach(function (text) {
-      var b = document.createElement("button");
-      b.className = "choice";
-      b.type = "button";
-      b.textContent = text;
-      b.setAttribute("aria-pressed", "false");
-      b.addEventListener("click", function () {
-        var on = b.getAttribute("aria-pressed") === "true";
-        b.setAttribute("aria-pressed", on ? "false" : "true");
-      });
-      box.appendChild(b);
-    });
-  }
-
-  function selectedBlockers() {
-    return Array.prototype.slice
-      .call(el("blockers").querySelectorAll('[aria-pressed="true"]'))
-      .map(function (b) { return b.textContent; });
-  }
-
   Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (b) {
     b.addEventListener("click", function () {
       Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
@@ -181,7 +148,7 @@
   });
 
   el("q2-next").addEventListener("click", function () {
-    state.answers.blockers = selectedBlockers();
+    state.answers.blockers = hardText();
     show("q3");
   });
 
@@ -189,6 +156,12 @@
     state.answers.decided = el("decided").value.trim();
     send();
   });
+
+  // הטור במסד הוא מערך טקסט, אז משפט חופשי נשמר כאיבר יחיד
+  function hardText() {
+    var v = el("hard").value.trim();
+    return v ? [v] : [];
+  }
 
   /* ================= שליחה ================= */
 
@@ -280,7 +253,7 @@
 
   el("redo").addEventListener("click", function () {
     state.answers = { attended: null, blockers: [], decided: "" };
-    buildBlockers();
+    el("hard").value = "";
     el("decided").value = "";
     Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
       o.setAttribute("aria-pressed", "false");
@@ -399,7 +372,6 @@
   /* ================= הפעלה ================= */
 
   function start() {
-    buildBlockers();
     var t = new Date();
     Array.prototype.slice.call(document.querySelectorAll(".today")).forEach(function (n) {
       n.textContent = t.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
