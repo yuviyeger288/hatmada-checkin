@@ -301,51 +301,10 @@
     } catch (e) { return false; }
   }
 
-  function isIOS() {
-    var ua = navigator.userAgent || "";
-    return /iPad|iPhone|iPod/.test(ua) ||
-           (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  }
-
-  function steps(list) {
-    var ol = el("install-steps");
-    ol.innerHTML = "";
-    list.forEach(function (html) {
-      var li = document.createElement("li");
-      li.innerHTML = html;
-      ol.appendChild(li);
-    });
-  }
-
+  // ההסבר מוצג לשתי המערכות תמיד, כדי שזיהוי שגוי לא יבלבל אף אחד.
+  // כפתור ההתקנה מופיע רק כשהדפדפן עצמו מציע אותו.
   function renderInstall() {
-    var btn = el("install-btn");
-    var arrow = el("install-arrow");
-
-    if (deferredPrompt) {
-      steps([]);
-      btn.hidden = false;
-      arrow.hidden = true;
-    } else if (isIOS()) {
-      steps([
-        'לחץ על כפתור השיתוף <span class="glyph">&#x2191;</span> בתחתית המסך',
-        'גלול ובחר <b>הוספה למסך הבית</b>',
-        'לחץ <b>הוסף</b> — וזהו'
-      ]);
-      btn.hidden = true;
-      arrow.hidden = false;
-      arrow.textContent = "↓";
-      arrow.classList.remove("up");
-    } else {
-      steps([
-        'פתח את התפריט <span class="glyph">&#x22EE;</span> בפינה העליונה',
-        'בחר <b>הוספה למסך הבית</b>',
-        'אשר — וזהו'
-      ]);
-      btn.hidden = true;
-      arrow.hidden = false;
-      arrow.textContent = "↑";
-      arrow.classList.add("up");
-    }
+    el("install-btn").hidden = !deferredPrompt;
   }
 
   function needsWelcome() {
