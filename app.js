@@ -296,6 +296,10 @@
   }
 
   function needsWelcome() {
+    // ?welcome=1 מאלץ את מסך ההתקנה, לבדיקות
+    try {
+      if (new URLSearchParams(location.search).get("welcome") === "1") return true;
+    } catch (e) {}
     return !isStandalone() && !lsGet(KEY_WELCOME);
   }
 
