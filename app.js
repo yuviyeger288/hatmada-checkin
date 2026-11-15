@@ -166,6 +166,9 @@
 
   Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (b) {
     b.addEventListener("click", function () {
+      Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
+        o.setAttribute("aria-pressed", o === b ? "true" : "false");
+      });
       state.answers.attended = b.getAttribute("data-v");
       if (state.answers.attended === "none") {
         state.answers.blockers = [];
@@ -269,7 +272,7 @@
     el("redo").hidden = !reported;
 
     // מי שעוד לא התקין רואה את ההסבר גם כאן, אחרי הדיווח
-    el("done").insertBefore(el("install"), el("redo"));
+    el("done").appendChild(el("install"));
     renderInstall();
 
     show("done");
@@ -279,6 +282,9 @@
     state.answers = { attended: null, blockers: [], decided: "" };
     buildBlockers();
     el("decided").value = "";
+    Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
+      o.setAttribute("aria-pressed", "false");
+    });
     show("q1");
   });
 
