@@ -1,5 +1,5 @@
 /* מטמין את המעטפת בלבד. הנתונים תמיד מהרשת. */
-var CACHE = "bh-shell-v17";
+var CACHE = "bh-shell-v18";
 var SHELL = [
   "./",
   "index.html",

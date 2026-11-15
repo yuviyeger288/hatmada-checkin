@@ -234,21 +234,25 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
   overflow:visible;
 }
 
-.climb-rest{
+/* המסילה: אותו עיצוב של הקו הישר — רקע בהיר עם מסגרת דקה */
+.climb-edge{
   stroke:var(--card-border);
-  stroke-width:10;
+  stroke-width:20;
   stroke-linecap:round;
 }
-
+.climb-rest{
+  stroke:var(--background);
+  stroke-width:18;
+  stroke-linecap:round;
+}
 .climb-fill{
   stroke:var(--primary);
-  stroke-width:10;
+  stroke-width:18;
   stroke-linecap:round;
   transition:all .6s ease;
 }
 
-.climb-week{fill:var(--card);stroke:var(--card-border);stroke-width:2}
-.climb-week.passed{fill:var(--card);stroke:var(--primary)}
+.climb-week{stroke:var(--card-border);stroke-width:1.5}
 
 .climb-goal{fill:var(--card);stroke:var(--primary);stroke-width:4}
 .climb-goal.reached{fill:var(--primary)}

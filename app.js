@@ -238,6 +238,22 @@
     fill.setAttribute("x2", String(X0 + (X1 - X0) * t));
     fill.setAttribute("y2", String(Y0 + (Y1 - Y0) * t));
 
+    // קווי שבוע חוצים את המסילה, כמו הסימונים בקו הישר
+    var dx = X1 - X0, dy = Y1 - Y0;
+    var len = Math.sqrt(dx * dx + dy * dy);
+    var nx = (-dy / len) * 9, ny = (dx / len) * 9;
+    var marks = el("climb-weeks");
+    marks.innerHTML = "";
+    for (var w = 1; w < weeks; w++) {
+      var tw = w / weeks;
+      var cx = X0 + dx * tw, cy = Y0 + dy * tw;
+      var seg = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      seg.setAttribute("x1", String(cx - nx)); seg.setAttribute("y1", String(cy - ny));
+      seg.setAttribute("x2", String(cx + nx)); seg.setAttribute("y2", String(cy + ny));
+      seg.setAttribute("class", "climb-week");
+      marks.appendChild(seg);
+    }
+
     el("climb-goal").classList.toggle("reached", total > 0 && filled >= total);
 
     el("count-filled").textContent = String(filled);
