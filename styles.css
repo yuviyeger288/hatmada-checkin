@@ -212,32 +212,25 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 
 /* ---------- הקו ---------- */
 
-.card{align-items:stretch}
+.card{align-items:stretch;gap:12px}
 
-.toward{
+.count{
   margin:0;
-  font-size:13px;
+  font-size:15px;
   font-weight:700;
   color:var(--text-muted);
+  font-variant-numeric:tabular-nums;
 }
+.count #count-filled{font-size:28px;font-weight:800;color:var(--text)}
+.count .of{font-weight:600}
 
-.destination{
-  margin:0;
-  font-size:clamp(19px,4.6vw,22px);
-  font-weight:800;
-  line-height:1.35;
-  color:var(--primary-dark);
-  text-wrap:balance;
-}
-
-/* הקו עצמו: מתמלא מימין לשמאל, עם סימון דק בסוף כל שבוע */
+/* הקו מתמלא מימין לשמאל ומתקרב ליעד שבקצה השמאלי */
 .line{
   position:relative;
   height:18px;
   border-radius:999px;
   background:var(--background);
   border:1px solid var(--card-border);
-  overflow:hidden;
 }
 
 .line-fill{
@@ -255,6 +248,8 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
   display:flex;
   flex-direction:row;
   direction:rtl;
+  border-radius:999px;
+  overflow:hidden;
 }
 .line-ticks span{
   flex:1 1 0;
@@ -262,15 +257,45 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 }
 .line-ticks span:last-child{border-left:0}
 
-.count{
+/* הנקודה שבסוף הקו — מה שהוא מתקרב אליו */
+.line-goal{
+  position:absolute;
+  top:50%;
+  left:-5px;
+  width:20px;
+  height:20px;
+  margin-top:-10px;
+  border-radius:50%;
+  background:var(--card);
+  border:3px solid var(--primary);
+}
+
+.goal-end{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  align-items:flex-start;
+  text-align:left;
+  max-width:88%;
+  margin-right:auto;
+  margin-left:0;
+}
+
+.toward{
   margin:0;
-  font-size:15px;
+  font-size:13px;
   font-weight:700;
   color:var(--text-muted);
-  font-variant-numeric:tabular-nums;
 }
-.count #count-filled{font-size:24px;font-weight:800;color:var(--text)}
-.count .of{font-weight:600}
+
+.destination{
+  margin:0;
+  font-size:clamp(18px,4.4vw,21px);
+  font-weight:800;
+  line-height:1.35;
+  color:var(--primary-dark);
+  text-wrap:balance;
+}
 
 /* ---------- הוספה למסך הבית ---------- */
 

@@ -78,13 +78,16 @@
     <section id="done" class="screen" hidden>
       <p class="eyebrow" id="done-eyebrow">הדרך שלך</p>
       <div class="card">
-        <p class="toward">הקו מתמלא לכיוון</p>
-        <p class="destination" id="destination"></p>
+        <p class="count"><span id="count-filled">0</span> <span class="of">מתוך</span> <span id="count-total">40</span></p>
         <div class="line" aria-label="הקו שלך">
           <div class="line-fill" id="line-fill"></div>
           <div class="line-ticks" id="line-ticks" aria-hidden="true"></div>
+          <div class="line-goal" aria-hidden="true"></div>
         </div>
-        <p class="count"><span id="count-filled">0</span> <span class="of">מתוך</span> <span id="count-total">40</span></p>
+        <div class="goal-end">
+          <p class="toward">לשם הקו הולך</p>
+          <p class="destination" id="destination"></p>
+        </div>
       </div>
       <p id="pending" class="msg" hidden>הדיווח יישלח כשתהיה רשת.</p>
       <button id="redo" class="btn ghost">לתקן את הדיווח של היום</button>

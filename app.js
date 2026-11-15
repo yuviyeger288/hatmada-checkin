@@ -84,8 +84,7 @@
     var msg = el("gate-msg");
     if (message) { msg.textContent = message; msg.hidden = false; }
     else { msg.hidden = true; }
-    el("gate").appendChild(el("install"));
-    renderInstall();
+    placeInstall("gate");
     show("gate");
     el("gate-code").focus();
   }
@@ -240,10 +239,6 @@
     el("done-eyebrow").textContent = reported ? "דיווחת היום. הנה הדרך שלך." : "הדרך שלך";
     el("redo").hidden = !reported;
 
-    // מי שעוד לא התקין רואה את ההסבר גם כאן, אחרי הדיווח
-    el("done").appendChild(el("install"));
-    renderInstall();
-
     show("done");
   }
 
@@ -321,6 +316,17 @@
     });
   }
 
+  var installPlaced = false;
+
+  function placeInstall(screenId) {
+    if (installPlaced) return;
+    var box = el("install");
+    if (!box) return;
+    el(screenId).appendChild(box);
+    installPlaced = true;
+    renderInstall();
+  }
+
   function renderInstall() {
     var box = el("install");
     var btn = el("install-btn");
@@ -374,8 +380,8 @@
     });
 
     var reported = state.checkins.some(function (k) { return k.day === today(); });
-    if (reported) renderDone(!!lsGet(KEY_PENDING));
-    else show("q1");
+    if (reported) { renderDone(!!lsGet(KEY_PENDING)); placeInstall("done"); }
+    else { show("q1"); placeInstall("q1"); }
   }
 
   function boot() {
