@@ -1,5 +1,5 @@
 /* מטמין את המעטפת בלבד. הנתונים תמיד מהרשת. */
-var CACHE = "bh-shell-v18";
+var CACHE = "bh-shell-v19";
 var SHELL = [
   "./",
   "index.html",
@@ -8,7 +8,9 @@ var SHELL = [
   "config.js",
   "manifest.webmanifest",
   "icon-192.png",
-  "icon-512.png"
+  "icon-512.png",
+  "coach.html",
+  "coach.js"
 ];
 
 /* GitHub Pages מגיש כל קובץ עם max-age=600, אז בקשה רגילה עלולה לחזור

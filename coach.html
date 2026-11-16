@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בונים התמדה — מלווה</title>
+<meta name="theme-color" content="#F5EEE4">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+#app.coach{max-width:44rem}
+.coach-head{display:flex;flex-direction:column;gap:4px;margin-bottom:20px}
+.coach-head h1{margin:0;font-size:26px;font-weight:800}
+
+.clients{display:flex;flex-direction:column;gap:16px}
+
+.client{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--r-lg);
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.client-top{display:flex;flex-direction:row-reverse;align-items:baseline;justify-content:space-between;gap:12px}
+.client-name{margin:0;font-size:22px;font-weight:800}
+.client-dest{margin:0;font-size:15px;color:var(--primary-dark);font-weight:700}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
+.stat{
+  background:var(--background);
+  border-radius:var(--r-md);
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.stat .k{font-size:12px;font-weight:700;color:var(--text-muted)}
+.stat .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat.warn .v{color:var(--primary-dark)}
+
+.log{display:flex;flex-direction:column;gap:0}
+.row{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:12px 0;
+  border-top:1px solid var(--card-border);
+}
+.row-top{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:baseline;gap:10px}
+.row-day{font-size:14px;color:var(--text-muted);font-weight:700}
+.tag{font-size:13px;font-weight:800;padding:2px 10px;border-radius:999px}
+.tag.yes{background:var(--primary);color:var(--on-primary)}
+.tag.no{background:var(--card-selected);color:var(--primary-dark)}
+.tag.none{background:var(--background);color:var(--text-dim);border:1px solid var(--card-border)}
+.said{margin:0;font-size:16px;line-height:1.5}
+.said b{color:var(--text-muted);font-weight:700;font-size:13px}
+.empty{margin:0;color:var(--text-muted);font-size:15px}
+</style>
+</head>
+<body>
+
+<div id="app" class="coach">
+
+  <section id="k-gate" class="screen" hidden>
+    <h1 class="title">דף המלווה</h1>
+    <p class="sub">הכנס את המפתח שלך.</p>
+    <input id="k-input" class="field" type="text" inputmode="latin" autocapitalize="off"
+           autocomplete="off" spellcheck="false" placeholder="מפתח">
+    <p id="k-msg" class="msg" hidden></p>
+    <button id="k-go" class="btn">כניסה</button>
+  </section>
+
+  <main id="board" hidden>
+    <div class="coach-head">
+      <p class="eyebrow">בונים התמדה</p>
+      <h1>הלקוחות שלך</h1>
+      <p class="sub" id="today-line"></p>
+    </div>
+    <div class="clients" id="clients"></div>
+  </main>
+
+  <section id="k-loading" class="screen">
+    <p class="sub center">רגע…</p>
+  </section>
+
+</div>
+
+<script src="config.js"></script>
+<script src="coach.js"></script>
+</body>
+</html>
