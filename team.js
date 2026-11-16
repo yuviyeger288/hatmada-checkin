@@ -5,15 +5,42 @@
 (function () {
   "use strict";
 
+  // נקרא לפני שהספרייה מנקה את הכתובת
+  var INVITE = /type=(invite|recovery|signup)/.test(location.hash || "");
+
   var el = function (id) { return document.getElementById(id); };
   var cfg = window.CONFIG || {};
   var sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
 
   function show(which) {
     el("login").hidden   = which !== "login";
+    el("setpw").hidden   = which !== "setpw";
     el("board").hidden   = which !== "board";
     el("loading").hidden = which !== "loading";
   }
+
+  function setpwNote(text) {
+    var m = el("setpw-msg");
+    if (text) { m.textContent = text; m.hidden = false; } else { m.hidden = true; }
+  }
+
+  el("setpw-go").addEventListener("click", function () {
+    var a = el("pw1").value, b = el("pw2").value;
+    if (a.length < 8) { setpwNote("לפחות 8 תווים."); return; }
+    if (a !== b)      { setpwNote("שתי הסיסמאות לא זהות."); return; }
+    setpwNote(null);
+    show("loading");
+    sb.auth.updateUser({ password: a }).then(function (res) {
+      el("pw1").value = ""; el("pw2").value = "";
+      if (res.error) { setpwNote("לא הצלחתי לשמור. נסה שוב."); show("setpw"); return; }
+      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      load();
+    });
+  });
+
+  el("pw2").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") el("setpw-go").click();
+  });
 
   function note(text) {
     var m = el("login-msg");
@@ -292,7 +319,9 @@
   });
 
   sb.auth.getSession().then(function (res) {
-    if (res.data && res.data.session) load();
+    var signedIn = !!(res.data && res.data.session);
+    if (signedIn && INVITE) { show("setpw"); el("pw1").focus(); }
+    else if (signedIn) load();
     else show("login");
   });
 })();
