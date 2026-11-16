@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בונים התמדה — צוות</title>
+<meta name="theme-color" content="#F5EEE4">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+#app.team{max-width:46rem}
+
+.bar{
+  display:flex;
+  flex-direction:row-reverse;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--card-border);
+  margin-bottom:20px;
+}
+.bar .who{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bar .who .name{font-size:18px;font-weight:800}
+.bar .who .role{font-size:13px;color:var(--text-muted);font-weight:700}
+.bar .out{
+  font:inherit;font-size:14px;font-weight:700;
+  color:var(--text-muted);background:none;border:0;cursor:pointer;padding:6px;
+}
+
+.coach-block{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+.coach-title{
+  display:flex;flex-direction:row-reverse;align-items:baseline;justify-content:space-between;gap:10px;
+}
+.coach-title h2{margin:0;font-size:20px;font-weight:800}
+.coach-title .meta{font-size:13px;color:var(--text-muted);font-weight:700}
+
+.clients{display:flex;flex-direction:column;gap:14px}
+
+.client{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--r-lg);
+  padding:18px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.client-top{display:flex;flex-direction:row-reverse;align-items:baseline;justify-content:space-between;gap:12px}
+.client-name{margin:0;font-size:21px;font-weight:800}
+.client-dest{margin:0;font-size:14px;color:var(--primary-dark);font-weight:700;text-align:left}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
+.stat{background:var(--background);border-radius:var(--r-md);padding:9px 11px;display:flex;flex-direction:column;gap:2px}
+.stat .k{font-size:12px;font-weight:700;color:var(--text-muted)}
+.stat .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat.warn .v{color:var(--primary-dark)}
+
+.toggle{
+  font:inherit;font-size:14px;font-weight:700;color:var(--primary);
+  background:none;border:0;cursor:pointer;padding:4px 0;text-align:right;
+}
+
+.log{display:flex;flex-direction:column}
+.log[hidden]{display:none}
+.row{display:flex;flex-direction:column;gap:4px;padding:11px 0;border-top:1px solid var(--card-border)}
+.row-top{display:flex;flex-direction:row-reverse;justify-content:space-between;align-items:baseline;gap:10px}
+.row-day{font-size:14px;color:var(--text-muted);font-weight:700}
+.tag{font-size:13px;font-weight:800;padding:2px 10px;border-radius:999px;white-space:nowrap}
+.tag.yes{background:var(--primary);color:var(--on-primary)}
+.tag.no{background:var(--card-selected);color:var(--primary-dark)}
+.tag.none{background:var(--background);color:var(--text-dim);border:1px solid var(--card-border)}
+.said{margin:0;font-size:16px;line-height:1.5}
+.said b{color:var(--text-muted);font-weight:700;font-size:13px}
+.empty{margin:0;color:var(--text-muted);font-size:15px}
+</style>
+</head>
+<body>
+
+<div id="app" class="team">
+
+  <section id="login" class="screen" hidden>
+    <p class="eyebrow">בונים התמדה</p>
+    <h1 class="title">כניסה</h1>
+    <input id="email" class="field" type="email" inputmode="email" autocapitalize="off"
+           autocomplete="username" spellcheck="false" placeholder="מייל">
+    <input id="password" class="field" type="password" autocomplete="current-password" placeholder="סיסמה">
+    <p id="login-msg" class="msg" hidden></p>
+    <button id="login-go" class="btn">כניסה</button>
+    <button id="forgot" class="btn ghost">שכחתי סיסמה</button>
+  </section>
+
+  <main id="board" hidden>
+    <div class="bar">
+      <div class="who">
+        <span class="name" id="who-name"></span>
+        <span class="role" id="who-role"></span>
+      </div>
+      <button id="logout" class="out">יציאה</button>
+    </div>
+    <div id="content"></div>
+  </main>
+
+  <section id="loading" class="screen">
+    <p class="sub center">רגע…</p>
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="team.js"></script>
+</body>
+</html>

@@ -1,3 +1,4 @@
 .claude/
 schema.sql
 schema-coach.sql
+schema-auth.sql

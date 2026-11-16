@@ -56,6 +56,8 @@ body{
   flex-direction:column;
   min-width:0;
 }
+/* הכלל שלמעלה גובר על ברירת המחדל של hidden, ולכן צריך לומר זאת במפורש */
+#app > main[hidden]{display:none}
 
 /* ---------- שורת ההתקדמות ---------- */
 
