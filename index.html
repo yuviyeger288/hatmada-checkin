@@ -120,10 +120,50 @@
     </section>
 
     <!-- ====== הטאב "משימות" ====== -->
-    <section id="tasks" class="screen" hidden>
+    <section id="tasks" class="screen top" hidden>
       <p class="eyebrow">משימות</p>
-      <h1 class="title">עוד אין משימות</h1>
-      <p class="sub">המשימה הראשונה תגיע אחרי השיחה הקרובה, והיא תופיע כאן.</p>
+      <h1 class="title">מה פתוח עכשיו</h1>
+      <div id="task-list" class="task-list"></div>
+    </section>
+
+    <!-- ====== לוח ההרגלים ======
+         שני שלבים בכוונה: קודם כותבים את כל היום בלי שום סימן על המסך,
+         ורק אחר כך מסמנים. מי שמסמן תוך כדי כתיבה מתחיל לכתוב את מה
+         שנשמע טוב במקום את מה שקרה, והתרגיל מאבד את הערך שלו. -->
+    <section id="board" class="screen top" hidden>
+      <button id="board-back" class="back" type="button">← למשימות</button>
+
+      <!-- שלב א' — כותבים -->
+      <div id="board-write">
+        <p class="eyebrow">משימה · לוח ההרגלים</p>
+        <h1 class="title">תכתוב את היום שלך</h1>
+        <p class="rule">לא משנים כלום. רק מסתכלים.</p>
+
+        <ol id="board-written" class="written"></ol>
+
+        <p id="board-prompt" class="prompt">מהרגע שקמת — מה הדבר הראשון שעשית?</p>
+        <input id="board-input" class="field" type="text" autocomplete="off"
+               enterkeyhint="done" placeholder="פעולה אחת">
+        <button id="board-add" class="btn">הוספה</button>
+
+        <p id="board-count" class="sub center"></p>
+        <button id="board-to-mark" class="btn ghost" hidden>סיימתי לכתוב — עכשיו לסמן</button>
+      </div>
+
+      <!-- שלב ב' — מסמנים -->
+      <div id="board-mark" hidden>
+        <p class="eyebrow">משימה · לוח ההרגלים</p>
+        <h1 class="title" id="mark-title">עכשיו תסמן</h1>
+        <p class="sub" id="mark-sub"><b>+</b> מקדם אותך למי שאתה רוצה להיות · <b>−</b> מרחיק · <b>=</b> לא משנה</p>
+
+        <div id="board-rows" class="board-rows"></div>
+
+        <p id="mark-count" class="sub center"></p>
+        <button id="board-more" class="btn ghost">להוסיף עוד שורות</button>
+        <button id="board-done" class="btn">סיימתי</button>
+      </div>
+
+      <p id="board-offline" class="msg" hidden>שמור אצלך במכשיר. יעלה כשתהיה רשת.</p>
     </section>
 
     <!-- ====== טעינה ====== -->

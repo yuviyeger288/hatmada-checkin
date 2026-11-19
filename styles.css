@@ -368,3 +368,139 @@ body.has-tabs #app{
 }
 
 #home-note{margin:0}
+
+/* ---------- מסכים שמתחילים מלמעלה ולא מהמרכז ---------- */
+
+.screen.top{justify-content:flex-start}
+.screen > .back{align-self:flex-start}
+
+/* ---------- רשימת המשימות ---------- */
+
+.task-list{display:flex;flex-direction:column;gap:12px}
+
+.task{
+  font:inherit;
+  text-align:right;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--r-lg);
+  padding:18px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  color:var(--text);
+}
+.task:active{background:var(--card-selected)}
+
+.task-top{
+  display:flex;
+  flex-direction:row-reverse;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.task-name{font-size:19px;font-weight:800}
+
+.task-tag{
+  font-size:12px;
+  font-weight:800;
+  padding:3px 10px;
+  border-radius:var(--r-full);
+  background:var(--background);
+  color:var(--text-dim);
+  border:1px solid var(--card-border);
+  white-space:nowrap;
+}
+.task-tag.mid{background:var(--card-selected);color:var(--primary-dark);border-color:var(--card-selected)}
+.task-tag.ok{background:var(--success);color:#fff;border-color:var(--success)}
+
+.task-note{margin:0;font-size:15px;color:var(--text-muted);line-height:1.45}
+
+/* ---------- לוח ההרגלים ---------- */
+
+/* הכלל היחיד של התרגיל. הוא נשאר מול העיניים כל הזמן. */
+.rule{
+  margin:0;
+  font-size:16px;
+  font-weight:800;
+  color:var(--primary-dark);
+  background:var(--card-selected);
+  border-radius:var(--r-md);
+  padding:12px 14px;
+}
+
+.prompt{
+  margin:0;
+  font-size:18px;
+  font-weight:800;
+  color:var(--text);
+}
+
+.written{
+  margin:0;
+  padding-inline-start:22px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  font-size:16px;
+  line-height:1.5;
+}
+.written:empty{display:none}
+.written li{padding-block:3px}
+.written li::marker{color:var(--text-dim);font-weight:700;font-size:13px}
+.written li span{vertical-align:middle}
+
+.row-del{
+  font:inherit;
+  font-size:19px;
+  line-height:1;
+  color:var(--text-dim);
+  background:none;
+  border:0;
+  cursor:pointer;
+  padding:0 8px;
+  vertical-align:middle;
+}
+.row-del:active{color:var(--primary)}
+
+.board-rows{display:flex;flex-direction:column;gap:8px}
+
+.board-row{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--r-md);
+  padding:10px 12px;
+  display:flex;
+  flex-direction:row-reverse;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.board-text{font-size:16px;line-height:1.4;min-width:0;flex:1}
+
+.marks{display:flex;gap:6px;flex-shrink:0}
+
+.mark{
+  font:inherit;
+  font-size:18px;
+  font-weight:800;
+  line-height:1;
+  width:38px;
+  height:38px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--card-border);
+  background:var(--background);
+  color:var(--text-dim);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.mark[aria-pressed="true"].plus{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.mark[aria-pressed="true"].eq{background:var(--card-selected);border-color:var(--card-border);color:var(--primary-dark)}
+/* המינוס כהה ולא אדום — זה תרגיל של מודעות, לא רשימת האשמות */
+.mark[aria-pressed="true"].minus{background:var(--text-muted);border-color:var(--text-muted);color:#fff}
+
+.btn:disabled{opacity:.4;cursor:default}
+.btn:disabled:active{background:var(--primary)}

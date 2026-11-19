@@ -136,6 +136,51 @@
     });
   }
 
+  function renderBoardLog(box, row) {
+    box.innerHTML = "";
+
+    var items = (row && row.items) || [];
+    if (!items.length) {
+      var p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "עוד לא התחיל את הלוח.";
+      box.appendChild(p);
+      return;
+    }
+
+    var count = function (sym) {
+      return items.filter(function (i) { return i.m === sym; }).length;
+    };
+
+    var head = document.createElement("p");
+    head.className = "empty";
+    head.textContent = items.length + " שורות · " + count("+") + " פלוס · " +
+      count("=") + " ניטרלי · " + count("−") + " מינוס · " +
+      (row.phase === "done" ? "הושלם" : "באמצע");
+    box.appendChild(head);
+
+    items.forEach(function (it) {
+      var r = document.createElement("div");
+      r.className = "row";
+
+      var top = document.createElement("div");
+      top.className = "row-top";
+
+      var t = document.createElement("span");
+      t.className = "said";
+      t.textContent = it.t;
+
+      var m = document.createElement("span");
+      m.className = "tag " + (it.m === "+" ? "yes" : it.m === "−" ? "no" : "none");
+      m.textContent = it.m || "—";
+
+      top.appendChild(t);
+      top.appendChild(m);
+      r.appendChild(top);
+      box.appendChild(r);
+    });
+  }
+
   function clientCard(c) {
     var card = document.createElement("div");
     card.className = "client";
@@ -190,6 +235,36 @@
         });
     });
     card.insertBefore(btn, log);
+
+    // לוח ההרגלים — נטען רק כשפותחים אותו
+    var bbox = document.createElement("div");
+    bbox.className = "log";
+    bbox.hidden = true;
+
+    var bbtn = document.createElement("button");
+    bbtn.className = "toggle";
+    bbtn.type = "button";
+    bbtn.textContent = "לוח ההרגלים ↓";
+    var bloaded = false;
+    bbtn.addEventListener("click", function () {
+      if (!bbox.hidden) { bbox.hidden = true; bbtn.textContent = "לוח ההרגלים ↓"; return; }
+      bbox.hidden = false;
+      bbtn.textContent = "סגור ↑";
+      if (bloaded) return;
+      bloaded = true;
+      bbox.innerHTML = '<p class="empty">טוען…</p>';
+      sb.from("boards")
+        .select("items,phase,updated_at")
+        .eq("client_id", c.id)
+        .maybeSingle()
+        .then(function (res) {
+          if (res.error) { bbox.innerHTML = '<p class="empty">לא הצלחתי לטעון.</p>'; return; }
+          renderBoardLog(bbox, res.data);
+        });
+    });
+
+    card.appendChild(bbtn);
+    card.appendChild(bbox);
 
     return card;
   }

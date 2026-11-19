@@ -7,9 +7,10 @@
   var KEY_CODE    = "bh.code";
   var KEY_PENDING = "bh.pending";
   var KEY_WELCOME = "bh.welcome.done";
+  var KEY_BOARD   = "bh.board";
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "loading"];
+  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -58,7 +59,7 @@
     t.addEventListener("click", function () {
       var target = t.getAttribute("data-tab");
       if (target === "home") renderHome(false, false);
-      else show(target);
+      else { renderTasks(); show(target); }
     });
   });
 
@@ -140,7 +141,7 @@
         state.client = rows[0];
         lsSet(KEY_CODE, code);
         pinCodeToUrl(code);
-        return loadCheckins().then(start);
+        return loadCheckins().then(loadBoard).then(start);
       })
       .catch(function (err) {
         if (err && err.message === "no-config") {
@@ -312,6 +313,235 @@
     });
     el("again").hidden = !reportedToday();
     show("q1");
+  });
+
+  /* ================= משימות ================= */
+
+  function renderTasks() {
+    var list = el("task-list");
+    list.innerHTML = "";
+    list.appendChild(boardCard());
+  }
+
+  function boardCard() {
+    var n = board.items.length;
+    var marked = board.items.filter(function (i) { return !!i.m; }).length;
+
+    var card = document.createElement("button");
+    card.type = "button";
+    card.className = "task";
+
+    var top = document.createElement("div");
+    top.className = "task-top";
+
+    var name = document.createElement("span");
+    name.className = "task-name";
+    name.textContent = "לוח ההרגלים";
+
+    var tag = document.createElement("span");
+    tag.className = "task-tag";
+    if (board.phase === "done") { tag.textContent = "הושלם"; tag.className += " ok"; }
+    else if (n === 0)           { tag.textContent = "לא התחיל"; }
+    else                        { tag.textContent = "באמצע"; tag.className += " mid"; }
+
+    top.appendChild(name);
+    top.appendChild(tag);
+
+    var note = document.createElement("p");
+    note.className = "task-note";
+    if (board.phase === "done")      note.textContent = n + " שורות, כולן מסומנות.";
+    else if (board.phase === "mark") note.textContent = "סימנת " + marked + " מתוך " + n + ".";
+    else if (n > 0)                  note.textContent = n + " שורות עד עכשיו. אפשר להמשיך מתי שתרצה.";
+    else                             note.textContent = "יום אחד, שורה לכל פעולה, ואז סימן אחד לכל שורה.";
+
+    card.appendChild(top);
+    card.appendChild(note);
+    card.addEventListener("click", openBoard);
+    return card;
+  }
+
+  /* ================= לוח ההרגלים =================
+     שני שלבים בכוונה. בשלב הכתיבה אין סימן אחד על המסך, כי מי שמסמן
+     תוך כדי כתיבה מתחיל לכתוב את מה שנשמע טוב במקום את מה שקרה. */
+
+  var board = { items: [], phase: "write", loaded: false };
+  var boardTimer = null;
+
+  function loadBoard() {
+    return rpc("app_get_board", { p_code: state.code })
+      .then(function (rows) {
+        var r = rows && rows[0];
+        if (r) {
+          board.items = Array.isArray(r.items) ? r.items : [];
+          board.phase = r.phase || "write";
+        }
+        board.loaded = true;
+        el("board-offline").hidden = true;
+      })
+      .catch(function () {
+        // אין רשת, או שהטבלה עוד לא הורצה: ממשיכים ממה ששמור במכשיר
+        var raw = lsGet(KEY_BOARD);
+        if (raw) {
+          try {
+            var o = JSON.parse(raw);
+            board.items = o.items || [];
+            board.phase = o.phase || "write";
+          } catch (e) {}
+        }
+        board.loaded = true;
+      });
+  }
+
+  // נשמר במכשיר מיד, ועולה לשרת רגע אחרי — שהקלדה לא תייצר בקשה לכל תו
+  function saveBoard() {
+    lsSet(KEY_BOARD, JSON.stringify({ items: board.items, phase: board.phase }));
+    if (boardTimer) clearTimeout(boardTimer);
+    boardTimer = setTimeout(function () {
+      rpc("app_save_board", { p_code: state.code, p_items: board.items, p_phase: board.phase })
+        .then(function () { el("board-offline").hidden = true; })
+        .catch(function () { el("board-offline").hidden = false; });
+    }, 500);
+  }
+
+  function openBoard() {
+    show("board");
+    renderBoard();
+  }
+
+  function renderBoard() {
+    var writing = board.phase === "write";
+    el("board-write").hidden = !writing;
+    el("board-mark").hidden = writing;
+    if (writing) renderWrite(); else renderMark();
+  }
+
+  function renderWrite() {
+    var n = board.items.length;
+
+    var ol = el("board-written");
+    ol.innerHTML = "";
+    board.items.forEach(function (it, i) {
+      var li = document.createElement("li");
+
+      var span = document.createElement("span");
+      span.textContent = it.t;
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "row-del";
+      del.setAttribute("aria-label", "מחיקת השורה");
+      del.textContent = "×";
+      del.addEventListener("click", function () {
+        board.items.splice(i, 1);
+        saveBoard();
+        renderWrite();
+      });
+
+      li.appendChild(span);
+      li.appendChild(del);
+      ol.appendChild(li);
+    });
+
+    el("board-prompt").textContent = n === 0
+      ? "מהרגע שקמת — מה הדבר הראשון שעשית?"
+      : "ואז?";
+
+    el("board-count").textContent = n === 0
+      ? ""
+      : n + " שורות. ברוב הימים יוצאות 25 ומעלה — הדברים הקטנים הם העיקר כאן.";
+
+    el("board-to-mark").hidden = n < 3;
+  }
+
+  function renderMark() {
+    var n = board.items.length;
+    var marked = board.items.filter(function (i) { return !!i.m; }).length;
+    var done = board.phase === "done";
+
+    el("mark-title").textContent = done ? "הלוח שלך" : "עכשיו תסמן";
+    el("mark-sub").innerHTML = done
+      ? "אפשר לשנות מתי שתרצה."
+      : "<b>+</b> מקדם אותך למי שאתה רוצה להיות · <b>−</b> מרחיק · <b>=</b> לא משנה";
+
+    var box = el("board-rows");
+    box.innerHTML = "";
+    board.items.forEach(function (it) {
+      var row = document.createElement("div");
+      row.className = "board-row";
+
+      var txt = document.createElement("span");
+      txt.className = "board-text";
+      txt.textContent = it.t;
+      row.appendChild(txt);
+
+      var marks = document.createElement("div");
+      marks.className = "marks";
+      ["+", "=", "−"].forEach(function (sym) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "mark " + (sym === "+" ? "plus" : sym === "=" ? "eq" : "minus");
+        b.textContent = sym;
+        b.setAttribute("aria-pressed", it.m === sym ? "true" : "false");
+        b.addEventListener("click", function () {
+          it.m = (it.m === sym) ? null : sym;
+          saveBoard();
+          renderMark();
+        });
+        marks.appendChild(b);
+      });
+      row.appendChild(marks);
+      box.appendChild(row);
+    });
+
+    el("mark-count").textContent = marked >= n
+      ? "כל השורות מסומנות."
+      : "נשארו " + (n - marked) + " שורות בלי סימן.";
+
+    var btn = el("board-done");
+    btn.textContent = done ? "לסגור" : "סיימתי";
+    btn.className = done ? "btn ghost" : "btn";
+    btn.disabled = !done && marked < n;
+  }
+
+  el("board-add").addEventListener("click", addBoardRow);
+
+  el("board-input").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); addBoardRow(); }
+  });
+
+  function addBoardRow() {
+    var v = el("board-input").value.trim();
+    if (!v) return;
+    board.items.push({ t: v, m: null });
+    el("board-input").value = "";
+    saveBoard();
+    renderWrite();
+    el("board-input").focus();
+  }
+
+  el("board-to-mark").addEventListener("click", function () {
+    board.phase = "mark";
+    saveBoard();
+    renderBoard();
+  });
+
+  el("board-more").addEventListener("click", function () {
+    board.phase = "write";
+    saveBoard();
+    renderBoard();
+    el("board-input").focus();
+  });
+
+  el("board-done").addEventListener("click", function () {
+    if (board.phase === "done") { renderTasks(); show("tasks"); return; }
+    board.phase = "done";
+    saveBoard();
+    renderBoard();
+  });
+
+  el("board-back").addEventListener("click", function () {
+    renderTasks();
+    show("tasks");
   });
 
   /* ================= הקוד שורד את ההתקנה ================= */
