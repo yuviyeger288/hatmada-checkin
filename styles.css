@@ -315,3 +315,56 @@ button:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important}
 }
+
+/* ---------- סרגל הטאבים ---------- */
+
+.tabs{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:10;
+  display:flex;
+  justify-content:center;
+  background:var(--card);
+  border-top:1px solid var(--card-border);
+  padding:6px 12px calc(env(safe-area-inset-bottom,0px) + 6px);
+}
+.tabs[hidden]{display:none}
+
+.tab{
+  flex:1 1 0;
+  max-width:15rem;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  color:var(--text-dim);
+  background:none;
+  border:0;
+  border-radius:var(--r-md);
+  padding:8px 4px 6px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  transition:color .12s;
+}
+.tab svg{
+  width:23px;
+  height:23px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.tab[aria-current="true"]{color:var(--primary)}
+.tab:active{background:var(--card-selected)}
+
+/* כשהסרגל קיים הוא לא מכסה את תחתית המסך */
+body.has-tabs #app{
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 78px);
+}
+
+#home-note{margin:0}

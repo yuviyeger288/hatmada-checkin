@@ -9,10 +9,14 @@
   var KEY_WELCOME = "bh.welcome.done";
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "q1", "q2", "q3", "done", "loading"];
+  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
+
+  // מסך שהוא מקום מקבל סרגל טאבים. מסך שהוא שלב לא מקבל, כדי שלא
+  // יהיה אפשר לברוח באמצע שאלה ולהשאיר דיווח חצי.
+  var TABBED = { home: true, tasks: true };
 
   function show(id) {
     screens.forEach(function (s) {
@@ -25,18 +29,37 @@
     if (step) {
       el("step-text").textContent = "שאלה " + step + " מתוך " + STEPS_TOTAL;
       el("progress-fill").style.width = (step / STEPS_TOTAL * 100) + "%";
-      el("back").hidden = (step === 1);
+      el("back").hidden = false;
       head.hidden = false;
     } else {
       head.hidden = true;
     }
 
+    var tabbed = TABBED[id] === true;
+    el("tabs").hidden = !tabbed;
+    document.body.classList.toggle("has-tabs", tabbed);
+    if (tabbed) {
+      Array.prototype.slice.call(document.querySelectorAll(".tab")).forEach(function (t) {
+        t.setAttribute("aria-current", t.getAttribute("data-tab") === id ? "true" : "false");
+      });
+    }
+
     window.scrollTo(0, 0);
   }
 
+  // משאלה 2 ו-3 החזרה היא צעד אחורה. משאלה 1 היא יציאה אל הקו.
   el("back").addEventListener("click", function () {
     if (!el("q3").hidden) show("q2");
     else if (!el("q2").hidden) show("q1");
+    else renderHome(false, false);
+  });
+
+  Array.prototype.slice.call(document.querySelectorAll(".tab")).forEach(function (t) {
+    t.addEventListener("click", function () {
+      var target = t.getAttribute("data-tab");
+      if (target === "home") renderHome(false, false);
+      else show(target);
+    });
   });
 
   /* ---------- אחסון מקומי, שלא יפיל את הדף ---------- */
@@ -201,11 +224,11 @@
     rpc("app_save_checkin", p)
       .then(function () {
         lsDel(KEY_PENDING);
-        renderDone(false);
+        renderHome(false, true);
       })
       .catch(function () {
         lsSet(KEY_PENDING, JSON.stringify(p));
-        renderDone(true);
+        renderHome(true, true);
       });
   }
 
@@ -221,7 +244,7 @@
 
   /* ================= המסלול ================= */
 
-  function renderDone(pending) {
+  function renderHome(pending, justSent) {
     var c = state.client;
     var weeks = c.program_weeks || 8;
     var perWeek = c.weekly_target || 5;
@@ -261,20 +284,33 @@
     el("destination").textContent = c.destination || c.identity_sentence || "";
     el("pending").hidden = !pending;
 
-    el("done-eyebrow").textContent = "נרשם. הנה הדרך שלך.";
+    var reported = reportedToday();
 
-    show("done");
+    el("home-eyebrow").textContent = justSent ? "נרשם. הנה הדרך שלך." : "הדרך שלך";
+    el("home-note").textContent = reported
+      ? "דיווחת היום. אפשר לשנות את מה שכתבת."
+      : "עוד לא דיווחת היום.";
+
+    var btn = el("report-btn");
+    btn.textContent = reported ? "לשנות את מה שדיווחתי" : "לדווח על היום";
+    btn.className = reported ? "btn ghost" : "btn";
+
+    show("home");
   }
 
-  // חזרה לשאלות ממסך הקו
-  el("again-btn").addEventListener("click", function () {
+  function reportedToday() {
+    return state.checkins.some(function (k) { return k.day === today(); });
+  }
+
+  // מהקו אל השאלות
+  el("report-btn").addEventListener("click", function () {
     state.answers = { attended: null, blockers: [], decided: "" };
     el("hard").value = "";
     el("decided").value = "";
     Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
       o.setAttribute("aria-pressed", "false");
     });
-    el("again").hidden = false;
+    el("again").hidden = !reportedToday();
     show("q1");
   });
 
@@ -336,7 +372,7 @@
   }
 
   function leaveWelcome() {
-    goToCheckin();
+    goHome();
   }
 
   el("welcome-next").addEventListener("click", leaveWelcome);
@@ -363,14 +399,12 @@
       show("welcome");
       return;
     }
-    goToCheckin();
+    goHome();
   }
 
-  // הקו הוא תמיד התחנה האחרונה: קודם ההתקנה, אחר כך השאלות, ורק אז הוא.
-  function goToCheckin() {
-    var reported = state.checkins.some(function (k) { return k.day === today(); });
-    el("again").hidden = !reported;
-    show("q1");
+  // "היום" הוא מסך הנחיתה: קודם ההתקנה, ואז הקו — והשאלות נפתחות ממנו.
+  function goHome() {
+    renderHome(false, false);
   }
 
   function boot() {
