@@ -471,9 +471,9 @@
     var done = board.phase === "done";
 
     el("mark-title").textContent = done ? "הלוח שלך" : "עכשיו תסמן";
-    el("mark-sub").innerHTML = done
+    el("mark-sub").textContent = done
       ? "אפשר לשנות מתי שתרצה."
-      : "<b>+</b> מקדם אותך למי שאתה רוצה להיות · <b>−</b> מרחיק · <b>=</b> לא משנה";
+      : "לכל שורה סימן אחד, ביחס למי שאתה רוצה להיות.";
 
     var box = el("board-rows");
     box.innerHTML = "";
@@ -488,11 +488,24 @@
 
       var marks = document.createElement("div");
       marks.className = "marks";
-      ["+", "=", "−"].forEach(function (sym) {
+      // התווית צמודה לסימן. אחרי עשרים שורות אף אחד לא זוכר מה "=" אומר.
+      [["+", "מקדמת"], ["=", "לא משנה"], ["−", "מרחיקה"]].forEach(function (pair) {
+        var sym = pair[0];
         var b = document.createElement("button");
         b.type = "button";
         b.className = "mark " + (sym === "+" ? "plus" : sym === "=" ? "eq" : "minus");
-        b.textContent = sym;
+
+        var glyph = document.createElement("span");
+        glyph.className = "mark-sym";
+        glyph.textContent = sym;
+
+        var word = document.createElement("span");
+        word.className = "mark-word";
+        word.textContent = pair[1];
+
+        b.appendChild(glyph);
+        b.appendChild(word);
+        b.setAttribute("aria-label", pair[1]);
         b.setAttribute("aria-pressed", it.m === sym ? "true" : "false");
         b.addEventListener("click", function () {
           it.m = (it.m === sym) ? null : sym;
