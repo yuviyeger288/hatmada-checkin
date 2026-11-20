@@ -2,3 +2,4 @@
 schema.sql
 schema-coach.sql
 schema-auth.sql
+seed-test-client.sql
