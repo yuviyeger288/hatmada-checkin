@@ -115,10 +115,17 @@ language sql security definer set search_path = public as $$
   delete from public.push_subscriptions where endpoint = p_endpoint;
 $$;
 
-revoke all on function public.push_today()             from public;
-revoke all on function public.push_due_today()         from public;
-revoke all on function public.push_mark_sent(text)     from public;
-revoke all on function public.push_forget(text)        from public;
+-- ⚠ חייב להיות גם anon וגם authenticated, ולא רק public.
+-- ב-Postgres כל פונקציה חדשה מוענקת ל-PUBLIC, אבל Supabase מוסיף על זה
+-- הרשאות ברירת מחדל שמעניקות EXECUTE **ישירות** ל-anon ול-authenticated
+-- על כל פונקציה חדשה בסכימה public. ביטול ההרשאה של PUBLIC לא נוגע
+-- בהענקה הישירה הזאת — ונבדק בפועל: בלעדי שתי השורות האלה
+-- push_due_today החזירה 200 למפתח הציבורי, כלומר את כתובות המכשירים
+-- ואת מפתחות ההצפנה שלהם.
+revoke all on function public.push_today()             from anon, authenticated, public;
+revoke all on function public.push_due_today()         from anon, authenticated, public;
+revoke all on function public.push_mark_sent(text)     from anon, authenticated, public;
+revoke all on function public.push_forget(text)        from anon, authenticated, public;
 
 grant execute on function public.push_today()          to service_role;
 grant execute on function public.push_due_today()      to service_role;
