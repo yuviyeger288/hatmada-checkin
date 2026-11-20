@@ -466,38 +466,37 @@ body.has-tabs #app{
 
 .board-rows{display:flex;flex-direction:column;gap:8px}
 
-/* הטקסט למעלה והסימנים מתחתיו ברוחב מלא — עם תווית לכל סימן אין מקום
-   לשלושתם לצד משפט, והמטרות למגע יוצאות גדולות יותר ממילא. */
 .board-row{
   background:var(--card);
   border:1px solid var(--card-border);
   border-radius:var(--r-md);
-  padding:12px;
+  padding:10px 12px;
   display:flex;
-  flex-direction:column;
+  flex-direction:row-reverse;
+  align-items:center;
+  justify-content:space-between;
   gap:10px;
 }
-.board-text{font-size:16px;line-height:1.4}
+.board-text{font-size:16px;line-height:1.4;min-width:0;flex:1}
 
-.marks{display:flex;gap:8px}
+.marks{display:flex;gap:6px;flex-shrink:0}
 
 .mark{
-  flex:1 1 0;
   font:inherit;
-  height:46px;
+  font-size:18px;
+  font-weight:800;
+  line-height:1;
+  width:38px;
+  height:38px;
   border-radius:var(--r-sm);
   border:1px solid var(--card-border);
   background:var(--background);
-  color:var(--text-muted);
+  color:var(--text-dim);
   cursor:pointer;
   display:flex;
-  flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:2px;
 }
-.mark-sym{font-size:17px;font-weight:800;line-height:1}
-.mark-word{font-size:11px;font-weight:700;line-height:1;white-space:nowrap}
 /* שלושת הסימנים באותו צבע בדיוק. צבע שונה לכל סימן אומר ללקוח מה הממשק
    חושב על הפעולה שלו, וזה תרגיל של מודעות — לא ציון. */
 .mark[aria-pressed="true"]{
@@ -508,3 +507,35 @@ body.has-tabs #app{
 
 .btn:disabled{opacity:.4;cursor:default}
 .btn:disabled:active{background:var(--primary)}
+
+/* ---------- מקרא הסימנים, במסך ההסבר בלבד ---------- */
+
+.legend{
+  margin:0;
+  padding:0;
+  list-style:none;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  font-size:15px;
+  color:var(--text-muted);
+}
+.legend li{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.legend b{
+  flex-shrink:0;
+  width:32px;
+  height:32px;
+  border-radius:var(--r-sm);
+  border:1px solid var(--card-border);
+  background:var(--card);
+  color:var(--primary-dark);
+  font-size:17px;
+  font-weight:800;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
