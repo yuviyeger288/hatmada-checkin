@@ -41,12 +41,21 @@ npx web-push generate-vapid-keys
 
 ## 4. לפרוס את הפונקציה
 
+בפעם הראשונה צריך להתחבר ל-CLI:
+
 ```bash
-cd site && npx supabase functions deploy daily-push
+npx --yes supabase login
 ```
 
-(בפעם הראשונה תתבקש להתחבר ולקשר את הפרויקט: `npx supabase login` ואז
-`npx supabase link`.)
+ואז, מתוך תיקיית `site`:
+
+```bash
+npx --yes supabase functions deploy daily-push --project-ref kzwmerqvzxfbkpslriud
+```
+
+`--project-ref` חוסך את `supabase link`. קובץ ההגדרות `supabase/config.toml`
+כבר קיים במאגר, כולל `verify_jwt = false` לפונקציה הזאת — זה מכוון, והנימוק
+כתוב בתוך הקובץ.
 
 ## 5. להריץ את הסכימה
 
