@@ -539,3 +539,14 @@ body.has-tabs #app{
   align-items:center;
   justify-content:center;
 }
+
+/* ---------- משימה שעוד לא נפתחה ---------- */
+
+.task.locked{
+  background:transparent;
+  border-style:dashed;
+  cursor:default;
+  color:var(--text-muted);
+}
+.task.locked .task-name{color:var(--text-muted);font-weight:700}
+.task.locked:active{background:transparent}

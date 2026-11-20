@@ -141,7 +141,7 @@
         state.client = rows[0];
         lsSet(KEY_CODE, code);
         pinCodeToUrl(code);
-        return loadCheckins().then(loadBoard).then(start);
+        return loadCheckins().then(loadTasks).then(loadBoard).then(start);
       })
       .catch(function (err) {
         if (err && err.message === "no-config") {
@@ -317,19 +317,38 @@
 
   /* ================= משימות ================= */
 
+  // המשימות שהמלווה פתח ללקוח. ריק = הכול נעול.
+  var openTasks = [];
+
+  function loadTasks() {
+    return rpc("app_get_tasks", { p_code: state.code })
+      .then(function (rows) { openTasks = Array.isArray(rows) ? rows : []; })
+      .catch(function () {
+        // אם אי אפשר לברר — נעול. ברירת המחדל הבטוחה היא סגור,
+        // כדי ששגיאת רשת לא תפתח משימה לפני הזמן.
+        openTasks = [];
+      });
+  }
+
+  function taskOpen(key) { return openTasks.indexOf(key) !== -1; }
+
   function renderTasks() {
+    el("tasks-title").textContent = taskOpen("board")
+      ? "מה פתוח עכשיו"
+      : "עוד לא נפתחה משימה";
     var list = el("task-list");
     list.innerHTML = "";
     list.appendChild(boardCard());
   }
 
   function boardCard() {
+    var open = taskOpen("board");
     var n = board.items.length;
     var marked = board.items.filter(function (i) { return !!i.m; }).length;
 
     var card = document.createElement("button");
     card.type = "button";
-    card.className = "task";
+    card.className = open ? "task" : "task locked";
 
     var top = document.createElement("div");
     top.className = "task-top";
@@ -340,23 +359,36 @@
 
     var tag = document.createElement("span");
     tag.className = "task-tag";
-    if (board.phase === "done") { tag.textContent = "הושלם"; tag.className += " ok"; }
-    else if (n === 0)           { tag.textContent = "לא התחיל"; }
-    else                        { tag.textContent = "באמצע"; tag.className += " mid"; }
-
-    top.appendChild(name);
-    top.appendChild(tag);
 
     var note = document.createElement("p");
     note.className = "task-note";
-    if (board.phase === "done")      note.textContent = n + " שורות, כולן מסומנות.";
-    else if (board.phase === "mark") note.textContent = "סימנת " + marked + " מתוך " + n + ".";
-    else if (n > 0)                  note.textContent = n + " שורות עד עכשיו. אפשר להמשיך מתי שתרצה.";
-    else                             note.textContent = "יום אחד, שורה לכל פעולה, ואז סימן אחד לכל שורה.";
 
+    if (!open) {
+      card.disabled = true;
+      tag.textContent = "נעול";
+      note.textContent = "תיפתח אחרי השיחה הקרובה.";
+    } else if (board.phase === "done") {
+      tag.className += " ok";
+      tag.textContent = "הושלם";
+      note.textContent = n + " שורות, כולן מסומנות.";
+    } else if (board.phase === "mark") {
+      tag.className += " mid";
+      tag.textContent = "באמצע";
+      note.textContent = "סימנת " + marked + " מתוך " + n + ".";
+    } else if (n > 0) {
+      tag.className += " mid";
+      tag.textContent = "באמצע";
+      note.textContent = n + " שורות עד עכשיו. אפשר להמשיך מתי שתרצה.";
+    } else {
+      tag.textContent = "לא התחיל";
+      note.textContent = "יום אחד, שורה לכל פעולה, ואז סימן אחד לכל שורה.";
+    }
+
+    top.appendChild(name);
+    top.appendChild(tag);
     card.appendChild(top);
     card.appendChild(note);
-    card.addEventListener("click", openBoard);
+    if (open) card.addEventListener("click", openBoard);
     return card;
   }
 

@@ -266,6 +266,43 @@
     card.appendChild(bbtn);
     card.appendChild(bbox);
 
+    // מתג פתיחה — הלקוח רואה את המשימה רק אחרי שלוחצים כאן
+    var lock = document.createElement("button");
+    lock.className = "toggle lock";
+    lock.type = "button";
+
+    var isOpen = (c.open_tasks || []).indexOf("board") !== -1;
+
+    function paintLock() {
+      lock.textContent = isOpen
+        ? "לוח ההרגלים פתוח ללקוח · ללחוץ כדי לנעול"
+        : "לוח ההרגלים נעול · ללחוץ כדי לפתוח";
+      if (isOpen) lock.classList.add("on");
+      else lock.classList.remove("on");
+    }
+    paintLock();
+
+    lock.addEventListener("click", function () {
+      var current = c.open_tasks || [];
+      var next = isOpen
+        ? current.filter(function (k) { return k !== "board"; })
+        : current.concat(["board"]);
+      lock.disabled = true;
+      lock.textContent = "רגע…";
+      sb.from("clients").update({ open_tasks: next }).eq("id", c.id).then(function (res) {
+        lock.disabled = false;
+        if (res.error) {
+          lock.textContent = "לא הצלחתי לשנות. נסה שוב.";
+          return;
+        }
+        c.open_tasks = next;
+        isOpen = !isOpen;
+        paintLock();
+      });
+    });
+
+    card.appendChild(lock);
+
     return card;
   }
 
