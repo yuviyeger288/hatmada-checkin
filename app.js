@@ -403,17 +403,29 @@
     }, 500);
   }
 
+  // ההסבר מופיע רק למי שעוד לא התחיל. מי שחוזר לאמצע ממשיך מאיפה שהפסיק.
+  var boardIntro = false;
+
   function openBoard() {
+    boardIntro = (board.items.length === 0 && board.phase === "write");
     show("board");
     renderBoard();
   }
 
   function renderBoard() {
     var writing = board.phase === "write";
-    el("board-write").hidden = !writing;
-    el("board-mark").hidden = writing;
+    el("board-intro").hidden = !boardIntro;
+    el("board-write").hidden = boardIntro || !writing;
+    el("board-mark").hidden  = boardIntro || writing;
+    if (boardIntro) return;
     if (writing) renderWrite(); else renderMark();
   }
+
+  el("board-start").addEventListener("click", function () {
+    boardIntro = false;
+    renderBoard();
+    el("board-input").focus();
+  });
 
   function renderWrite() {
     var n = board.items.length;

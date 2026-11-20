@@ -497,10 +497,13 @@ body.has-tabs #app{
   align-items:center;
   justify-content:center;
 }
-.mark[aria-pressed="true"].plus{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
-.mark[aria-pressed="true"].eq{background:var(--card-selected);border-color:var(--card-border);color:var(--primary-dark)}
-/* המינוס כהה ולא אדום — זה תרגיל של מודעות, לא רשימת האשמות */
-.mark[aria-pressed="true"].minus{background:var(--text-muted);border-color:var(--text-muted);color:#fff}
+/* שלושת הסימנים באותו צבע בדיוק. צבע שונה לכל סימן אומר ללקוח מה הממשק
+   חושב על הפעולה שלו, וזה תרגיל של מודעות — לא ציון. */
+.mark[aria-pressed="true"]{
+  background:var(--primary);
+  border-color:var(--primary);
+  color:var(--on-primary);
+}
 
 .btn:disabled{opacity:.4;cursor:default}
 .btn:disabled:active{background:var(--primary)}
