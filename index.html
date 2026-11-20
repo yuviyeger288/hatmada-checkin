@@ -117,6 +117,12 @@
       <p id="pending" class="msg" hidden>הדיווח יישלח כשתהיה רשת.</p>
       <p id="home-note" class="sub center"></p>
       <button id="report-btn" class="btn">לדווח על היום</button>
+
+      <!-- התזכורת היומית. ההסבר נקרא לפני הלחיצה, כי באייפון סירוב אחד
+           הוא סופי. כל ההיגיון ב-push.js, ושלושת האלה נחשפים משם. -->
+      <p id="push-why" class="sub center" hidden>רוצה שהטלפון יזכיר לך לבד? תזכורת אחת בערב, ורק אם עוד לא דיווחת.</p>
+      <button id="push-btn" class="btn ghost" type="button" hidden>להפעיל תזכורת יומית</button>
+      <p id="push-msg" class="msg center" hidden></p>
     </section>
 
     <!-- ====== הטאב "משימות" ====== -->
@@ -205,5 +211,6 @@
 
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script src="push.js"></script>
 </body>
 </html>

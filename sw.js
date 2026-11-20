@@ -1,10 +1,11 @@
 /* מטמין את המעטפת בלבד. הנתונים תמיד מהרשת. */
-var CACHE = "bh-shell-v22";
+var CACHE = "bh-shell-v23";
 var SHELL = [
   "./",
   "index.html",
   "styles.css",
   "app.js",
+  "push.js",
   "config.js",
   "manifest.webmanifest",
   "icon-192.png",
@@ -49,5 +50,40 @@ self.addEventListener("fetch", function (e) {
         return res;
       })
       .catch(function () { return caches.match(req, { ignoreSearch: true }); })
+  );
+});
+
+/* ---------- התזכורת היומית ----------
+   רק שני המאזינים האלה נוספו כאן. כל שאר ההיגיון של התזכורת יושב
+   ב-push.js ובפונקציה שבצד השרת. */
+
+self.addEventListener("push", function (e) {
+  var d = {};
+  try { if (e.data) d = e.data.json() || {}; } catch (x) { d = {}; }
+
+  var title = d.title || "בונים התמדה";
+  var body  = d.body  || "עוד לא דיווחת על היום. שתי דקות וזה נסגר.";
+
+  e.waitUntil(self.registration.showNotification(title, {
+    body: body,
+    icon: "icon-192.png",
+    badge: "icon-192.png",
+    lang: "he",
+    dir: "rtl",
+    // תג קבוע: אם בכל זאת הגיעו שתיים, השנייה מחליפה ולא נערמת
+    tag: "bh-daily"
+  }));
+});
+
+self.addEventListener("notificationclick", function (e) {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (list) {
+      for (var i = 0; i < list.length; i++) {
+        if ("focus" in list[i]) return list[i].focus();
+      }
+      // "./" נפתח בתוך ה-scope, והקוד של הלקוח כבר שמור אצלו
+      return self.clients.openWindow("./");
+    })
   );
 });
