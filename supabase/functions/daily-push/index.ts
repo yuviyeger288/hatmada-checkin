@@ -40,7 +40,7 @@ const VAPID: Vapid = {
   subject: env("VAPID_SUBJECT") || "mailto:push@hatmada.invalid",
 };
 
-const PUSH_HOUR = parseInt(env("PUSH_HOUR") || "20", 10);
+const PUSH_HOUR = parseInt(env("PUSH_HOUR") || "21", 10);
 
 const TEXT = {
   title: env("PUSH_TITLE") || "בונים התמדה",

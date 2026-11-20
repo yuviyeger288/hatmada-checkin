@@ -61,6 +61,14 @@
     return iso === todayISO() ? "היום · " + label : label;
   }
 
+  // באיזו שעה הוא דיווח בפועל. זה מה שקובע באיזו שעה תזכורת הגיונית.
+  function timeLabel(ts) {
+    if (!ts) return "";
+    try {
+      return new Date(ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+    } catch (e) { return ""; }
+  }
+
   function daysSince(iso) {
     if (!iso) return null;
     var a = String(iso).split("-");
@@ -120,7 +128,8 @@
       top.className = "row-top";
       var day = document.createElement("span");
       day.className = "row-day";
-      day.textContent = dayLabel(r.day);
+      var at = timeLabel(r.created_at);
+      day.textContent = dayLabel(r.day) + (at ? " · " + at : "");
       var a = ATTENDED[r.attended] || ATTENDED.none;
       var tag = document.createElement("span");
       tag.className = "tag " + a.cls;
@@ -225,7 +234,7 @@
       loaded = true;
       log.innerHTML = '<p class="empty">טוען…</p>';
       sb.from("checkins")
-        .select("day,attended,blockers,decided")
+        .select("day,attended,blockers,decided,created_at")
         .eq("client_id", c.id)
         .order("day", { ascending: false })
         .limit(21)
