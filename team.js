@@ -145,6 +145,48 @@
     });
   }
 
+  var LOOP_Q = [
+    ["cue",      "גירוי · מה מזכיר לו"],
+    ["crave",    "חשק · איזו תחושה"],
+    ["response", "תגובה · כמה גדולה הפעולה"],
+    ["reward",   "תגמול · מה הוא מקבל"]
+  ];
+
+  // המשפט על השלב השבור הוא התוצר של המשימה, ולכן הוא ראשון ולא אחרון.
+  function renderLoopLog(box, row) {
+    box.innerHTML = "";
+
+    var d = (row && row.data) || {};
+    var any = LOOP_Q.some(function (q) { return d[q[0]]; }) || d.broken;
+    if (!any) {
+      var p = document.createElement("p");
+      p.className = "empty";
+      p.textContent = "עוד לא התחיל.";
+      box.appendChild(p);
+      return;
+    }
+
+    if (d.broken) {
+      var head = document.createElement("div");
+      head.className = "row";
+      head.appendChild(said("השלב השבור", d.broken + (d.why ? " — " + d.why : "")));
+      box.appendChild(head);
+    }
+
+    LOOP_Q.forEach(function (q) {
+      if (!d[q[0]]) return;
+      var r = document.createElement("div");
+      r.className = "row";
+      r.appendChild(said(q[1], d[q[0]]));
+      box.appendChild(r);
+    });
+
+    var foot = document.createElement("p");
+    foot.className = "empty";
+    foot.textContent = (row && row.done) ? "הושלם" : "באמצע";
+    box.appendChild(foot);
+  }
+
   function renderBoardLog(box, row) {
     box.innerHTML = "";
 
@@ -275,42 +317,77 @@
     card.appendChild(bbtn);
     card.appendChild(bbox);
 
-    // מתג פתיחה — הלקוח רואה את המשימה רק אחרי שלוחצים כאן
-    var lock = document.createElement("button");
-    lock.className = "toggle lock";
-    lock.type = "button";
+    // לולאת ההרגל — משימת שבוע 1
+    var lbox = document.createElement("div");
+    lbox.className = "log";
+    lbox.hidden = true;
 
-    var isOpen = (c.open_tasks || []).indexOf("board") !== -1;
-
-    function paintLock() {
-      lock.textContent = isOpen
-        ? "לוח ההרגלים פתוח ללקוח · ללחוץ כדי לנעול"
-        : "לוח ההרגלים נעול · ללחוץ כדי לפתוח";
-      if (isOpen) lock.classList.add("on");
-      else lock.classList.remove("on");
-    }
-    paintLock();
-
-    lock.addEventListener("click", function () {
-      var current = c.open_tasks || [];
-      var next = isOpen
-        ? current.filter(function (k) { return k !== "board"; })
-        : current.concat(["board"]);
-      lock.disabled = true;
-      lock.textContent = "רגע…";
-      sb.from("clients").update({ open_tasks: next }).eq("id", c.id).then(function (res) {
-        lock.disabled = false;
-        if (res.error) {
-          lock.textContent = "לא הצלחתי לשנות. נסה שוב.";
-          return;
-        }
-        c.open_tasks = next;
-        isOpen = !isOpen;
-        paintLock();
-      });
+    var lbtn = document.createElement("button");
+    lbtn.className = "toggle";
+    lbtn.type = "button";
+    lbtn.textContent = "לולאת ההרגל ↓";
+    var lloaded = false;
+    lbtn.addEventListener("click", function () {
+      if (!lbox.hidden) { lbox.hidden = true; lbtn.textContent = "לולאת ההרגל ↓"; return; }
+      lbox.hidden = false;
+      lbtn.textContent = "סגור ↑";
+      if (lloaded) return;
+      lloaded = true;
+      lbox.innerHTML = '<p class="empty">טוען…</p>';
+      sb.from("answers")
+        .select("data,done,updated_at")
+        .eq("client_id", c.id)
+        .eq("task_key", "loop")
+        .maybeSingle()
+        .then(function (res) {
+          if (res.error) { lbox.innerHTML = '<p class="empty">לא הצלחתי לטעון.</p>'; return; }
+          renderLoopLog(lbox, res.data);
+        });
     });
 
-    card.appendChild(lock);
+    card.appendChild(lbtn);
+    card.appendChild(lbox);
+
+    // מתג פתיחה — הלקוח רואה את המשימה רק אחרי שלוחצים כאן
+    [["loop", "לולאת ההרגל"], ["board", "לוח ההרגלים"]].forEach(function (pair) {
+      var key = pair[0], title = pair[1];
+
+      var lock = document.createElement("button");
+      lock.className = "toggle lock";
+      lock.type = "button";
+
+      var isOpen = (c.open_tasks || []).indexOf(key) !== -1;
+
+      function paintLock() {
+        lock.textContent = isOpen
+          ? title + " פתוחה ללקוח · ללחוץ כדי לנעול"
+          : title + " נעולה · ללחוץ כדי לפתוח";
+        if (isOpen) lock.classList.add("on");
+        else lock.classList.remove("on");
+      }
+      paintLock();
+
+      lock.addEventListener("click", function () {
+        var current = c.open_tasks || [];
+        var next = isOpen
+          ? current.filter(function (k) { return k !== key; })
+          : current.concat([key]);
+        lock.disabled = true;
+        lock.textContent = "רגע…";
+        sb.from("clients").update({ open_tasks: next }).eq("id", c.id).then(function (res) {
+          lock.disabled = false;
+          if (res.error) {
+            lock.textContent = "לא הצלחתי לשנות. נסה שוב.";
+            return;
+          }
+          c.open_tasks = next;
+          isOpen = !isOpen;
+          paintLock();
+        });
+      });
+
+      card.appendChild(lock);
+    });
 
     return card;
   }

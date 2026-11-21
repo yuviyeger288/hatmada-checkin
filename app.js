@@ -8,9 +8,10 @@
   var KEY_PENDING = "bh.pending";
   var KEY_WELCOME = "bh.welcome.done";
   var KEY_BOARD   = "bh.board";
+  var KEY_ANSWERS = "bh.answers";
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loading"];
+  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loop", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -141,7 +142,7 @@
         state.client = rows[0];
         lsSet(KEY_CODE, code);
         pinCodeToUrl(code);
-        return loadCheckins().then(loadTasks).then(loadBoard).then(start);
+        return loadCheckins().then(loadTasks).then(loadBoard).then(loadAnswers).then(start);
       })
       .catch(function (err) {
         if (err && err.message === "no-config") {
@@ -333,12 +334,69 @@
   function taskOpen(key) { return openTasks.indexOf(key) !== -1; }
 
   function renderTasks() {
-    el("tasks-title").textContent = taskOpen("board")
-      ? "מה פתוח עכשיו"
-      : "עוד לא נפתחה משימה";
+    var any = taskOpen("loop") || taskOpen("board");
+    el("tasks-title").textContent = any ? "מה פתוח עכשיו" : "עוד לא נפתחה משימה";
     var list = el("task-list");
     list.innerHTML = "";
+    // לפי סדר התוכנית: לולאת ההרגל היא שבוע 1, לוח ההרגלים שבוע 2
+    list.appendChild(loopCard());
     list.appendChild(boardCard());
+  }
+
+  /* כרטיס משימה — אותו מבנה לכל המשימות. מחזיר כפתור מושבת כשהיא נעולה. */
+  function taskCard(opts) {
+    var card = document.createElement("button");
+    card.type = "button";
+    card.className = opts.open ? "task" : "task locked";
+
+    var top = document.createElement("div");
+    top.className = "task-top";
+
+    var name = document.createElement("span");
+    name.className = "task-name";
+    name.textContent = opts.title;
+
+    var tag = document.createElement("span");
+    tag.className = "task-tag" + (opts.tagClass ? " " + opts.tagClass : "");
+    tag.textContent = opts.tag;
+
+    var note = document.createElement("p");
+    note.className = "task-note";
+    note.textContent = opts.note;
+
+    top.appendChild(name);
+    top.appendChild(tag);
+    card.appendChild(top);
+    card.appendChild(note);
+
+    if (opts.open && opts.onOpen) card.addEventListener("click", opts.onOpen);
+    else card.disabled = true;
+
+    return card;
+  }
+
+  function loopCard() {
+    var open = taskOpen("loop");
+    var a = answers.loop || { data: {}, done: false };
+    var filled = LOOP_FIELDS.filter(function (k) {
+      return String(a.data[k] || "").trim();
+    }).length;
+
+    if (!open) {
+      return taskCard({ open: false, title: "לולאת ההרגל", tag: "נעול",
+                        note: "תיפתח בהמשך." });
+    }
+    if (a.done) {
+      return taskCard({ open: true, title: "לולאת ההרגל", tag: "הושלם", tagClass: "ok",
+                        note: "השלב השבור: " + (a.data.broken || "—"), onOpen: openLoop });
+    }
+    if (filled || a.data.broken) {
+      return taskCard({ open: true, title: "לולאת ההרגל", tag: "באמצע", tagClass: "mid",
+                        note: "ענית על " + filled + " מתוך 4.", onOpen: openLoop });
+    }
+    return taskCard({ open: true, title: "לולאת ההרגל", tag: "לא התחיל",
+                      note: "ארבע שאלות על ההרגל שלך, ומשפט אחד על מה שבור.",
+                      onOpen: openLoop });
   }
 
   function boardCard() {
@@ -588,6 +646,134 @@
   });
 
   el("board-back").addEventListener("click", function () {
+    renderTasks();
+    show("tasks");
+  });
+
+  /* ================= לולאת ההרגל =================
+     ארבע שאלות על ההרגל שהוא בונה, ואז שלב אחד שבור ולמה. המשפט על
+     השלב השבור הוא התוצר של המשימה — בלעדיו "סיימתי" לא נפתח. */
+
+  var answers = {};
+  var LOOP_FIELDS = ["cue", "crave", "response", "reward"];
+  var loopIntro = false;
+  var loopTimer = null;
+
+  function loadAnswers() {
+    return rpc("app_get_answers", { p_code: state.code })
+      .then(function (rows) {
+        answers = {};
+        (rows || []).forEach(function (r) {
+          answers[r.task_key] = { data: r.data || {}, done: !!r.done };
+        });
+      })
+      .catch(function () {
+        var raw = lsGet(KEY_ANSWERS);
+        if (raw) { try { answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; } }
+      });
+  }
+
+  function loopData() {
+    if (!answers.loop) answers.loop = { data: {}, done: false };
+    if (!answers.loop.data) answers.loop.data = {};
+    return answers.loop;
+  }
+
+  function saveLoop(done) {
+    var a = loopData();
+    a.data = {
+      cue:      el("loop-cue").value.trim(),
+      crave:    el("loop-crave").value.trim(),
+      response: el("loop-response").value.trim(),
+      reward:   el("loop-reward").value.trim(),
+      broken:   a.data.broken || "",
+      why:      el("loop-why").value.trim()
+    };
+    if (typeof done === "boolean") a.done = done;
+
+    lsSet(KEY_ANSWERS, JSON.stringify(answers));
+    if (loopTimer) clearTimeout(loopTimer);
+    loopTimer = setTimeout(function () {
+      rpc("app_save_answer", {
+        p_code: state.code, p_task: "loop", p_data: a.data, p_done: a.done
+      })
+        .then(function () { el("loop-offline").hidden = true; })
+        .catch(function () { el("loop-offline").hidden = false; });
+    }, 600);
+  }
+
+  function openLoop() {
+    var a = loopData();
+    var started = LOOP_FIELDS.some(function (k) { return String(a.data[k] || "").trim(); })
+                  || !!a.data.broken;
+    loopIntro = !started;
+    show("loop");
+    renderLoop();
+  }
+
+  function renderLoop() {
+    el("loop-intro").hidden = !loopIntro;
+    el("loop-form").hidden = loopIntro;
+    if (loopIntro) return;
+
+    var a = loopData();
+    el("loop-cue").value      = a.data.cue || "";
+    el("loop-crave").value    = a.data.crave || "";
+    el("loop-response").value = a.data.response || "";
+    el("loop-reward").value   = a.data.reward || "";
+    el("loop-why").value      = a.data.why || "";
+
+    Array.prototype.slice.call(document.querySelectorAll("#loop-broken .choice")).forEach(function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-v") === a.data.broken ? "true" : "false");
+    });
+
+    refreshLoopDone();
+  }
+
+  // נקראת בכל הקלדה. לא נוגעת בערכי השדות, כדי שהסמן לא יקפוץ.
+  function refreshLoopDone() {
+    var a = loopData();
+    var ready = !!a.data.broken && !!String(a.data.why || "").trim();
+    el("loop-note").textContent = a.done
+      ? "נשלח אליי. אפשר לשנות מתי שתרצה."
+      : (ready ? "" : "כדי לסיים צריך לבחור שלב אחד ולכתוב למה דווקא הוא.");
+    var btn = el("loop-done");
+    btn.textContent = a.done ? "לסגור" : "סיימתי";
+    btn.className = a.done ? "btn ghost" : "btn";
+    btn.disabled = !a.done && !ready;
+  }
+
+  ["loop-cue", "loop-crave", "loop-response", "loop-reward", "loop-why"].forEach(function (id) {
+    el(id).addEventListener("input", function () { saveLoop(); refreshLoopDone(); });
+  });
+
+  Array.prototype.slice.call(document.querySelectorAll("#loop-broken .choice")).forEach(function (b) {
+    b.addEventListener("click", function () {
+      var a = loopData();
+      var v = b.getAttribute("data-v");
+      a.data.broken = (a.data.broken === v) ? "" : v;
+      Array.prototype.slice.call(document.querySelectorAll("#loop-broken .choice")).forEach(function (o) {
+        o.setAttribute("aria-pressed", o.getAttribute("data-v") === a.data.broken ? "true" : "false");
+      });
+      saveLoop();
+      refreshLoopDone();
+    });
+  });
+
+  el("loop-start").addEventListener("click", function () {
+    loopIntro = false;
+    renderLoop();
+    el("loop-cue").focus();
+  });
+
+  el("loop-done").addEventListener("click", function () {
+    var a = loopData();
+    if (a.done) { renderTasks(); show("tasks"); return; }
+    saveLoop(true);
+    renderLoop();
+  });
+
+  el("loop-back").addEventListener("click", function () {
     renderTasks();
     show("tasks");
   });

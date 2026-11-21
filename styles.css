@@ -550,3 +550,14 @@ body.has-tabs #app{
 }
 .task.locked .task-name{color:var(--text-muted);font-weight:700}
 .task.locked:active{background:transparent}
+
+/* ---------- שאלות פתוחות במשימה ---------- */
+
+.q{display:flex;flex-direction:column;gap:8px;margin-bottom:6px}
+.q-head{margin:0;font-size:16px;line-height:1.45;color:var(--text)}
+.q-head b{color:var(--primary-dark)}
+
+/* בחירת השלב השבור יושבת בשורה, לא בעמודה כמו שאר הבחירות */
+#loop-broken{flex-direction:row;flex-wrap:wrap;gap:8px}
+#loop-broken .choice{flex:1 1 0;min-width:70px;text-align:center;padding:12px 8px;font-weight:700}
+#loop-broken .choice[aria-pressed="true"]::after{content:none}

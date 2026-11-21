@@ -189,6 +189,61 @@
       <p id="board-offline" class="msg" hidden>שמור אצלך במכשיר. יעלה כשתהיה רשת.</p>
     </section>
 
+    <!-- ====== לולאת ההרגל — המשימה של סרטון 1 ====== -->
+    <section id="loop" class="screen top" hidden>
+      <button id="loop-back" class="back" type="button">← למשימות</button>
+
+      <div id="loop-intro">
+        <p class="eyebrow">משימה · לולאת ההרגל</p>
+        <h1 class="title">מה הולך לקרות כאן</h1>
+        <p class="sub">כל הרגל עובר ארבעה שלבים. תענה על שאלה אחת לכל שלב, על ההרגל שאתה בונה עכשיו — ואז תגיד איזה מהם שבור אצלך, ולמה.</p>
+        <p class="rule">אין תשובות נכונות, ולא מתקנים כלום. רק מסתכלים.</p>
+        <p class="sub">אם לאחד מהשלבים אין לך תשובה בכלל — <b>זאת התשובה</b>, וזה בדיוק מה שאנחנו מחפשים.</p>
+        <button id="loop-start" class="btn">מתחילים</button>
+      </div>
+
+      <div id="loop-form" hidden>
+        <p class="eyebrow">משימה · לולאת ההרגל</p>
+        <h1 class="title">ארבעת השלבים</h1>
+        <p class="rule">משפט, לא מילה — וגם למה.</p>
+
+        <div class="q">
+          <p class="q-head"><b>1. גירוי</b> — מה מזכיר לך שהגיע הזמן?</p>
+          <textarea id="loop-cue" class="field area" rows="3" placeholder="מה קורה רגע לפני, ולמה דווקא זה"></textarea>
+        </div>
+
+        <div class="q">
+          <p class="q-head"><b>2. חשק</b> — איזו תחושה אתה רוצה מזה?</p>
+          <textarea id="loop-crave" class="field area" rows="3" placeholder="מה מושך אותך לשם, ולמה"></textarea>
+        </div>
+
+        <div class="q">
+          <p class="q-head"><b>3. תגובה</b> — כמה גדולה הפעולה עצמה?</p>
+          <textarea id="loop-response" class="field area" rows="3" placeholder="מה בדיוק אתה עושה, וכמה זה דורש"></textarea>
+        </div>
+
+        <div class="q">
+          <p class="q-head"><b>4. תגמול</b> — מה אתה מקבל מזה עכשיו?</p>
+          <textarea id="loop-reward" class="field area" rows="3" placeholder="מה אתה מרגיש מיד אחרי, ולמה"></textarea>
+        </div>
+
+        <div class="q">
+          <p class="q-head">ועכשיו — <b>איזה שלב שבור אצלך?</b></p>
+          <div class="choices" id="loop-broken">
+            <button class="choice" type="button" data-v="גירוי">גירוי</button>
+            <button class="choice" type="button" data-v="חשק">חשק</button>
+            <button class="choice" type="button" data-v="תגובה">תגובה</button>
+            <button class="choice" type="button" data-v="תגמול">תגמול</button>
+          </div>
+          <textarea id="loop-why" class="field area" rows="3" placeholder="ולמה דווקא הוא"></textarea>
+        </div>
+
+        <p id="loop-note" class="sub center"></p>
+        <button id="loop-done" class="btn">סיימתי</button>
+        <p id="loop-offline" class="msg" hidden>שמור אצלך במכשיר. יעלה כשתהיה רשת.</p>
+      </div>
+    </section>
+
     <!-- ====== טעינה ====== -->
     <section id="loading" class="screen">
       <p class="sub center">רגע…</p>
