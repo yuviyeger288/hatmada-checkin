@@ -349,8 +349,10 @@
     card.appendChild(lbox);
 
     // מתג פתיחה — הלקוח רואה את המשימה רק אחרי שלוחצים כאן
-    [["loop", "לולאת ההרגל"], ["board", "לוח ההרגלים"]].forEach(function (pair) {
-      var key = pair[0], title = pair[1];
+    // המין הדקדוקי נשמר לכל משימה — "לוח" זכר, "לולאה" נקבה
+    [["loop", "לולאת ההרגל", "פתוחה", "נעולה"],
+     ["board", "לוח ההרגלים", "פתוח", "נעול"]].forEach(function (pair) {
+      var key = pair[0], title = pair[1], openWord = pair[2], shutWord = pair[3];
 
       var lock = document.createElement("button");
       lock.className = "toggle lock";
@@ -360,8 +362,8 @@
 
       function paintLock() {
         lock.textContent = isOpen
-          ? title + " פתוחה ללקוח · ללחוץ כדי לנעול"
-          : title + " נעולה · ללחוץ כדי לפתוח";
+          ? title + " " + openWord + " ללקוח · ללחוץ כדי לנעול"
+          : title + " " + shutWord + " · ללחוץ כדי לפתוח";
         if (isOpen) lock.classList.add("on");
         else lock.classList.remove("on");
       }
