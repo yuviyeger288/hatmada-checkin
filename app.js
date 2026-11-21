@@ -10,6 +10,10 @@
   var KEY_BOARD   = "bh.board";
   var KEY_ANSWERS = "bh.answers";
 
+  /* האחסון המקומי נפרד לכל קוד לקוח. בלי זה מכשיר אחד שפתח שני קודים
+     מערבב ביניהם — ומה שלקוח אחד כתב מופיע אצל אחר. */
+  function mine(base) { return base + "." + (state.code || "-"); }
+
   var el = function (id) { return document.getElementById(id); };
   var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loop", "loading"];
 
@@ -479,7 +483,7 @@
       })
       .catch(function () {
         // אין רשת, או שהטבלה עוד לא הורצה: ממשיכים ממה ששמור במכשיר
-        var raw = lsGet(KEY_BOARD);
+        var raw = lsGet(mine(KEY_BOARD));
         if (raw) {
           try {
             var o = JSON.parse(raw);
@@ -493,7 +497,7 @@
 
   // נשמר במכשיר מיד, ועולה לשרת רגע אחרי — שהקלדה לא תייצר בקשה לכל תו
   function saveBoard() {
-    lsSet(KEY_BOARD, JSON.stringify({ items: board.items, phase: board.phase }));
+    lsSet(mine(KEY_BOARD), JSON.stringify({ items: board.items, phase: board.phase }));
     if (boardTimer) clearTimeout(boardTimer);
     boardTimer = setTimeout(function () {
       rpc("app_save_board", { p_code: state.code, p_items: board.items, p_phase: board.phase })
@@ -677,7 +681,7 @@
         });
       })
       .catch(function () {
-        var raw = lsGet(KEY_ANSWERS);
+        var raw = lsGet(mine(KEY_ANSWERS));
         if (raw) { try { answers = JSON.parse(raw) || {}; } catch (e) { answers = {}; } }
       });
   }
@@ -700,7 +704,7 @@
     };
     if (typeof done === "boolean") a.done = done;
 
-    lsSet(KEY_ANSWERS, JSON.stringify(answers));
+    lsSet(mine(KEY_ANSWERS), JSON.stringify(answers));
     if (loopTimer) clearTimeout(loopTimer);
     loopTimer = setTimeout(function () {
       rpc("app_save_answer", {
@@ -881,6 +885,8 @@
   }
 
   function boot() {
+    lsDel(KEY_BOARD); lsDel(KEY_ANSWERS);   // שאריות מלפני ההפרדה לפי קוד
+
     var code = (initialParams.get("c") || lsGet(KEY_CODE) || codeFromCookie() || "").trim().toLowerCase();
     if (!code) { openGate(); return; }
     flushPending().then(function () { tryCode(code); });
