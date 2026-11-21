@@ -15,6 +15,8 @@ window.CONFIG = {
   // קישורים שהלקוח רואה בתוך המשימות. ריק = הקישור פשוט לא מוצג.
   LINKS: {
     video1: "https://youtu.be/qth77HmSi10",
-    deck1:  "https://claude.ai/artifact/B8kvkGzLUJGAe46ZZ1E7Gk"
+    // המצגת מוגשת מהאתר עצמו ולא כארטיפקט של קלוד: ארטיפקט פרטי נפתח
+    // רק לבעלים, והלקוח מקבל דף שבור בלי שאף אחד יידע.
+    deck1:  "habit-loop-deck.pdf"
   }
 };
