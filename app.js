@@ -338,9 +338,18 @@
     el("tasks-title").textContent = any ? "מה פתוח עכשיו" : "עוד לא נפתחה משימה";
     var list = el("task-list");
     list.innerHTML = "";
-    // לפי סדר התוכנית: לולאת ההרגל היא שבוע 1, לוח ההרגלים שבוע 2
-    list.appendChild(loopCard());
-    list.appendChild(boardCard());
+    // לפי סדר התוכנית, וכל אחת נושאת את המקור שלה
+    list.appendChild(withFrom(loopCard(), "משימה 1 · סרטון 1"));
+    list.appendChild(withFrom(boardCard(), "משימה 2 · שיחה 2"));
+  }
+
+  // מאיזה שלב בתוכנית המשימה הגיעה. יושב מעל השם בכרטיס.
+  function withFrom(card, from) {
+    var s = document.createElement("span");
+    s.className = "task-from";
+    s.textContent = from;
+    card.insertBefore(s, card.firstChild);
+    return card;
   }
 
   /* כרטיס משימה — אותו מבנה לכל המשימות. מחזיר כפתור מושבת כשהיא נעולה. */
