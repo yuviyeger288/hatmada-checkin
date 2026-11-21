@@ -724,7 +724,20 @@
     renderLoop();
   }
 
+  // הקישורים של המשימה מגיעים מ-config.js. ריק = לא מוצג בכלל,
+  // כדי שלא יהיה כפתור שמוביל לשום מקום.
+  function setLoopLinks() {
+    var L = (window.CONFIG && window.CONFIG.LINKS) || {};
+    [["lnk-video", L.video1], ["lnk-deck", L.deck1]].forEach(function (pair) {
+      Array.prototype.slice.call(document.querySelectorAll("." + pair[0])).forEach(function (a) {
+        if (pair[1]) { a.href = pair[1]; a.hidden = false; }
+        else { a.removeAttribute("href"); a.hidden = true; }
+      });
+    });
+  }
+
   function renderLoop() {
+    setLoopLinks();
     el("loop-intro").hidden = !loopIntro;
     el("loop-form").hidden = loopIntro;
     if (loopIntro) return;

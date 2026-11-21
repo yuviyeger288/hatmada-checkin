@@ -569,3 +569,24 @@ body.has-tabs #app{
   color:var(--text-dim);
   letter-spacing:.03em;
 }
+
+/* ---------- קישורים בתוך משימה ---------- */
+
+.links{display:flex;flex-direction:column;gap:8px}
+.links:empty{display:none}
+
+.lnk{
+  font:inherit;
+  font-size:16px;
+  font-weight:700;
+  color:var(--primary-dark);
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--r-md);
+  padding:13px 16px;
+  text-align:center;
+  text-decoration:none;
+  display:block;
+}
+.lnk[hidden]{display:none}
+.lnk:active{background:var(--card-selected)}
