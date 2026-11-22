@@ -734,8 +734,16 @@
         else { a.removeAttribute("href"); a.hidden = true; }
         // לשונית נפרדת רק לכתובת חיצונית. דף שלנו נפתח במקום, אחרת
         // אין היסטוריה ואין דרך לחזור מהאפליקציה שבמסך הבית.
-        if (pair[2]) a.setAttribute("target", "_blank");
-        else a.removeAttribute("target");
+        if (pair[2]) {
+          a.setAttribute("target", "_blank");
+        } else {
+          a.removeAttribute("target");
+          // יציאה לדף שלנו מרעננת את האפליקציה, ואז המצב בזיכרון אבד.
+          // זה מה שמחזיר אותו למשימה ולא למסך הראשי.
+          a.onclick = function () {
+            try { sessionStorage.setItem("bh.resume", "loop"); } catch (e) {}
+          };
+        }
       });
     });
   }
@@ -898,6 +906,13 @@
 
   // "היום" הוא מסך הנחיתה: קודם ההתקנה, ואז הקו — והשאלות נפתחות ממנו.
   function goHome() {
+    var back = null;
+    try {
+      back = sessionStorage.getItem("bh.resume");
+      sessionStorage.removeItem("bh.resume");
+    } catch (e) {}
+
+    if (back === "loop" && taskOpen("loop")) { renderTasks(); openLoop(); return; }
     renderHome(false, false);
   }
 
