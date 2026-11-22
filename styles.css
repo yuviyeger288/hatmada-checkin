@@ -590,3 +590,17 @@ body.has-tabs #app{
 }
 .lnk[hidden]{display:none}
 .lnk:active{background:var(--card-selected)}
+
+/* ---------- מסך המצגת ---------- */
+
+.deck-frame{
+  flex:1 1 auto;
+  width:100%;
+  min-height:60vh;
+  border:1px solid var(--card-border);
+  border-radius:var(--r-md);
+  background:var(--card);
+}
+.deck-frame[hidden]{display:none}
+#deck-outside[hidden]{display:none}
+#deck-outside{display:flex;flex-direction:column;gap:14px}

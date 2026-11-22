@@ -17,6 +17,6 @@ window.CONFIG = {
     video1: "https://youtu.be/qth77HmSi10",
     // המצגת מוגשת מהאתר עצמו ולא כארטיפקט של קלוד: ארטיפקט פרטי נפתח
     // רק לבעלים, והלקוח מקבל דף שבור בלי שאף אחד יידע.
-    deck1:  "deck.html?f=habit-loop-deck.pdf"
+    deck1:  "habit-loop-deck.pdf"
   }
 };

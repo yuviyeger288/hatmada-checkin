@@ -15,7 +15,7 @@
   function mine(base) { return base + "." + (state.code || "-"); }
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loop", "loading"];
+  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loop", "deck", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -715,6 +715,39 @@
     }, 600);
   }
 
+  /* ---------- מסך המצגת ---------- */
+
+  // אייפון לא מצייר PDF בתוך הדף — הוא מראה מסגרת ריקה ולא מדווח כלום.
+  function appleDevice() {
+    try {
+      var ua = navigator.userAgent || "";
+      return /iPad|iPhone|iPod/.test(ua) ||
+             (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    } catch (e) { return false; }
+  }
+
+  function openDeck(url) {
+    if (!url) return;
+    el("deck-name").textContent = "משימה 1 · לולאת ההרגל";
+    if (appleDevice()) {
+      el("deck-frame").hidden = true;
+      el("deck-frame").removeAttribute("src");
+      el("deck-open").href = url;
+      el("deck-outside").hidden = false;
+    } else {
+      el("deck-outside").hidden = true;
+      el("deck-frame").src = url;
+      el("deck-frame").hidden = false;
+    }
+    show("deck");
+  }
+
+  el("deck-back").addEventListener("click", function () {
+    el("deck-frame").removeAttribute("src");   // לעצור טעינה ברקע
+    show("loop");
+    renderLoop();
+  });
+
   function openLoop() {
     var a = loopData();
     var started = LOOP_FIELDS.some(function (k) { return String(a.data[k] || "").trim(); })
@@ -734,16 +767,10 @@
         else { a.removeAttribute("href"); a.hidden = true; }
         // לשונית נפרדת רק לכתובת חיצונית. דף שלנו נפתח במקום, אחרת
         // אין היסטוריה ואין דרך לחזור מהאפליקציה שבמסך הבית.
-        if (pair[2]) {
-          a.setAttribute("target", "_blank");
-        } else {
-          a.removeAttribute("target");
-          // יציאה לדף שלנו מרעננת את האפליקציה, ואז המצב בזיכרון אבד.
-          // זה מה שמחזיר אותו למשימה ולא למסך הראשי.
-          a.onclick = function () {
-            try { sessionStorage.setItem("bh.resume", "loop"); } catch (e) {}
-          };
-        }
+        // הסרטון הוא אתר חיצוני ונפתח בחלון משלו. המצגת שלנו, והיא
+        // נפתחת כמסך בתוך האפליקציה — בלי ניווט ובלי מלכודת.
+        if (pair[2]) a.setAttribute("target", "_blank");
+        else a.onclick = function () { openDeck(pair[1]); };
       });
     });
   }

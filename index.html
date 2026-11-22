@@ -201,7 +201,7 @@
         <p class="sub">אם לאחד מהשלבים אין לך תשובה בכלל — <b>זאת התשובה</b>, וזה בדיוק מה שאנחנו מחפשים.</p>
         <div class="links">
           <a class="lnk lnk-video" target="_blank" rel="noopener" hidden>לצפות בסרטון</a>
-          <a class="lnk lnk-deck" target="_blank" rel="noopener" hidden>המצגת של הסרטון</a>
+          <button class="lnk lnk-deck" type="button" hidden>המצגת של הסרטון</button>
         </div>
         <button id="loop-start" class="btn">מתחילים</button>
       </div>
@@ -213,7 +213,7 @@
 
         <div class="links">
           <a class="lnk lnk-video" target="_blank" rel="noopener" hidden>לצפות בסרטון</a>
-          <a class="lnk lnk-deck" target="_blank" rel="noopener" hidden>המצגת של הסרטון</a>
+          <button class="lnk lnk-deck" type="button" hidden>המצגת של הסרטון</button>
         </div>
 
         <div class="q">
@@ -250,6 +250,19 @@
         <p id="loop-note" class="sub center"></p>
         <button id="loop-done" class="btn">סיימתי</button>
         <p id="loop-offline" class="msg" hidden>שמור אצלך במכשיר. יעלה כשתהיה רשת.</p>
+      </div>
+    </section>
+
+    <!-- ====== מצגת, בתוך האפליקציה ======
+         בכוונה מסך ולא קישור: באפליקציה שמותקנת במסך הבית אין סרגל
+         דפדפן, וניווט החוצה משאיר את הלקוח בלי שום דרך לחזור. -->
+    <section id="deck" class="screen top" hidden>
+      <button id="deck-back" class="back" type="button">← חזרה למשימה</button>
+      <p class="eyebrow" id="deck-name"></p>
+      <iframe id="deck-frame" class="deck-frame" title="מצגת" hidden></iframe>
+      <div id="deck-outside" hidden>
+        <p class="sub">באייפון המצגת לא נפתחת בתוך הדף. היא תיפתח בחלון של המכשיר, ויש שם כפתור סגירה שמחזיר לכאן.</p>
+        <a id="deck-open" class="btn" target="_blank" rel="noopener">לפתוח את המצגת</a>
       </div>
     </section>
 
