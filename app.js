@@ -728,10 +728,14 @@
   // כדי שלא יהיה כפתור שמוביל לשום מקום.
   function setLoopLinks() {
     var L = (window.CONFIG && window.CONFIG.LINKS) || {};
-    [["lnk-video", L.video1], ["lnk-deck", L.deck1]].forEach(function (pair) {
+    [["lnk-video", L.video1, true], ["lnk-deck", L.deck1, false]].forEach(function (pair) {
       Array.prototype.slice.call(document.querySelectorAll("." + pair[0])).forEach(function (a) {
         if (pair[1]) { a.href = pair[1]; a.hidden = false; }
         else { a.removeAttribute("href"); a.hidden = true; }
+        // לשונית נפרדת רק לכתובת חיצונית. דף שלנו נפתח במקום, אחרת
+        // אין היסטוריה ואין דרך לחזור מהאפליקציה שבמסך הבית.
+        if (pair[2]) a.setAttribute("target", "_blank");
+        else a.removeAttribute("target");
       });
     });
   }

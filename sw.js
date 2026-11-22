@@ -1,8 +1,9 @@
 /* מטמין את המעטפת בלבד. הנתונים תמיד מהרשת. */
-var CACHE = "bh-shell-v29";
+var CACHE = "bh-shell-v30";
 var SHELL = [
   "./",
   "index.html",
+  "deck.html",
   "styles.css",
   "app.js",
   "push.js",

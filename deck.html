@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בונים התמדה — מצגת</title>
+<meta name="theme-color" content="#F5EEE4">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* האפליקציה מותקנת למסך הבית, ולכן אין כאן סרגל של דפדפן ואין כפתור
+   חזרה. בלי הסרגל הזה אי אפשר לצאת מהמצגת בחזרה למשימה. */
+html,body{height:100%}
+body{margin:0;display:flex;flex-direction:column;background:var(--background)}
+
+.bar{
+  flex:0 0 auto;
+  display:flex;
+  flex-direction:row-reverse;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  background:var(--card);
+  border-bottom:1px solid var(--card-border);
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;
+}
+.bar .back{font-size:16px;font-weight:800;color:var(--primary);background:none;border:0;cursor:pointer;padding:6px}
+.bar .name{font-size:14px;font-weight:700;color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.sheet{flex:1 1 auto;border:0;width:100%;background:var(--background)}
+
+.fallback{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  padding:32px 24px calc(env(safe-area-inset-bottom,0px) + 32px);
+  text-align:center;
+}
+.fallback p{margin:0;color:var(--text-muted);font-size:16px;line-height:1.5}
+.fallback .btn{max-width:22rem}
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <button id="back" class="back" type="button">← חזרה למשימה</button>
+  <span class="name" id="name"></span>
+</div>
+
+<iframe id="sheet" class="sheet" title="מצגת"></iframe>
+
+<div class="fallback" id="fallback" hidden>
+  <p>הדפדפן הזה לא מציג מצגות בתוך הדף.</p>
+  <a id="open" class="btn" target="_blank" rel="noopener">לפתוח את המצגת</a>
+  <p>היא תיפתח בחלון נפרד, וחזרה לכאן תחזיר אותך למשימה.</p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var el = function (id) { return document.getElementById(id); };
+
+  // רק קובץ מתוך האתר עצמו. פרמטר שמנסה להצביע למקום אחר נדחה.
+  function fileFromUrl() {
+    var f = "";
+    try { f = new URLSearchParams(location.search).get("f") || ""; } catch (e) {}
+    return /^[A-Za-z0-9._-]+\.pdf$/.test(f) ? f : "";
+  }
+
+  var file = fileFromUrl();
+  var titles = { "habit-loop-deck.pdf": "לולאת ההרגל · סרטון 1" };
+  el("name").textContent = titles[file] || "מצגת";
+
+  el("back").addEventListener("click", function () {
+    // חזרה בהיסטוריה אם הגענו מהאפליקציה; אחרת פתיחה שלה מחדש.
+    if (history.length > 1) history.back();
+    else location.href = "./";
+  });
+
+  if (!file) {
+    el("sheet").hidden = true;
+    el("fallback").hidden = false;
+    el("open").hidden = true;
+    el("fallback").querySelector("p").textContent = "לא נמצאה מצגת לפתוח.";
+    return;
+  }
+
+  el("open").href = file;
+
+  // אייפון לא מציג PDF בתוך iframe — הוא מצייר מסגרת ריקה בלי שום שגיאה.
+  // לכן כאן לא מחכים לאירוע אלא מזהים את המכשיר ומציעים לו פתיחה בחלון.
+  var apple = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+
+  if (apple) {
+    el("sheet").hidden = true;
+    el("fallback").hidden = false;
+  } else {
+    el("sheet").src = file;
+  }
+})();
+</script>
+</body>
+</html>
