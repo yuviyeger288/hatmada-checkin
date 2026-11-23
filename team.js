@@ -111,16 +111,100 @@
     return p;
   }
 
-  function renderLog(box, rows) {
+  /* ---------- הקלטות ---------- */
+
+  var SLOT_LABEL = { hard: "מה היה קשה", decided: "מה הכריע" };
+  var SLOTS = ["hard", "decided"];
+
+  function secsLabel(s) {
+    s = Math.max(0, Math.round(s || 0));
+    var r = s % 60;
+    return Math.floor(s / 60) + ":" + (r < 10 ? "0" : "") + r;
+  }
+
+  function b64ToBlob(b64, mime) {
+    var bin = atob(b64);
+    var n = bin.length, a = new Uint8Array(n);
+    for (var i = 0; i < n; i++) a[i] = bin.charCodeAt(i);
+    return new Blob([a], { type: mime || "audio/mp4" });
+  }
+
+  /* האודיו עצמו נשלף רק בלחיצה. היומן טוען את הרשימה בלבד, אחרת כל
+     פתיחה של כרטיס לקוח היתה מורידה את כל ההקלטות שלו. */
+  function voiceBlock(clientId, day, slot, secs) {
+    var wrap = document.createElement("div");
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "toggle";
+    btn.textContent = "▶ " + (SLOT_LABEL[slot] || slot) + " · הקלטה " + secsLabel(secs);
+
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+      btn.textContent = "טוען…";
+      sb.from("checkin_voice")
+        .select("b64,mime,secs")
+        .eq("client_id", clientId)
+        .eq("day", day)
+        .eq("slot", slot)
+        .maybeSingle()
+        .then(function (res) {
+          if (res.error || !res.data || !res.data.b64) {
+            btn.disabled = false;
+            btn.textContent = "לא הצלחתי לטעון. ללחוץ שוב";
+            return;
+          }
+          var lab = document.createElement("p");
+          lab.className = "said";
+          var b = document.createElement("b");
+          b.textContent = (SLOT_LABEL[slot] || slot) + " · הקלטה:";
+          lab.appendChild(b);
+
+          var a = document.createElement("audio");
+          a.className = "said-audio";
+          a.controls = true;
+          a.preload = "metadata";
+          a.src = URL.createObjectURL(b64ToBlob(res.data.b64, res.data.mime));
+
+          wrap.innerHTML = "";
+          wrap.appendChild(lab);
+          wrap.appendChild(a);
+        });
+    });
+
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  function renderLog(box, rows, voice, clientId) {
     box.innerHTML = "";
-    if (!rows.length) {
+    voice = voice || [];
+
+    /* יום שיש בו הקלטה אבל הדיווח לא נשלח מופיע בכל זאת. בלי זה
+       ההקלטה יושבת במסד ואף אחד לא יודע שהיא שם. */
+    var seen = {};
+    rows.forEach(function (r) { seen[String(r.day)] = true; });
+
+    var all = rows.slice();
+    voice.forEach(function (v) {
+      var d = String(v.day);
+      if (seen[d]) return;
+      seen[d] = true;
+      all.push({ day: d, attended: null, blockers: [], decided: "", created_at: null, partial: true });
+    });
+    all.sort(function (x, y) {
+      return String(x.day) < String(y.day) ? 1 : String(x.day) > String(y.day) ? -1 : 0;
+    });
+
+    if (!all.length) {
       var p = document.createElement("p");
       p.className = "empty";
       p.textContent = "עוד אין דיווחים.";
       box.appendChild(p);
       return;
     }
-    rows.forEach(function (r) {
+
+    all.forEach(function (r) {
       var row = document.createElement("div");
       row.className = "row";
 
@@ -130,16 +214,31 @@
       day.className = "row-day";
       var at = timeLabel(r.created_at);
       day.textContent = dayLabel(r.day) + (at ? " · " + at : "");
-      var a = ATTENDED[r.attended] || ATTENDED.none;
+
       var tag = document.createElement("span");
-      tag.className = "tag " + a.cls;
-      tag.textContent = a.text;
+      if (r.partial) {
+        tag.className = "tag none";
+        tag.textContent = "לא נשלח";
+      } else {
+        var a = ATTENDED[r.attended] || ATTENDED.none;
+        tag.className = "tag " + a.cls;
+        tag.textContent = a.text;
+      }
       top.appendChild(day); top.appendChild(tag);
       row.appendChild(top);
 
       var hard = (r.blockers || []).join(", ");
       if (hard) row.appendChild(said("מה היה קשה", hard));
       if (r.decided) row.appendChild(said("מה הכריע", r.decided));
+
+      SLOTS.forEach(function (slot) {
+        for (var i = 0; i < voice.length; i++) {
+          if (String(voice[i].day) === String(r.day) && voice[i].slot === slot) {
+            row.appendChild(voiceBlock(clientId, r.day, slot, voice[i].secs));
+            return;
+          }
+        }
+      });
 
       box.appendChild(row);
     });
@@ -252,7 +351,9 @@
 
     var stats = document.createElement("div");
     stats.className = "stats";
-    stats.appendChild(stat("השבוע", c.attended_week + " / " + (c.weekly_target || 5)));
+    // "השבוע" הוא שבוע לוח שמתחיל ביום ראשון, לא שבעה ימים אחרונים.
+    // הכתוב בתווית אומר את זה, כדי שלא יהיה ספק מה המספר סופר.
+    stats.appendChild(stat("השבוע · מראשון", c.attended_week + " / " + (c.weekly_target || 5)));
     stats.appendChild(stat("בסך הכול", c.attended_total + " / " + total));
     stats.appendChild(stat("דיווחים השבוע", String(c.reported_week)));
     stats.appendChild(stat("דיווח אחרון", gapText(gap), gap !== null && gap >= 2));
@@ -275,15 +376,22 @@
       if (loaded) return;
       loaded = true;
       log.innerHTML = '<p class="empty">טוען…</p>';
-      sb.from("checkins")
-        .select("day,attended,blockers,decided,created_at")
-        .eq("client_id", c.id)
-        .order("day", { ascending: false })
-        .limit(21)
-        .then(function (res) {
-          if (res.error) { log.innerHTML = '<p class="empty">לא הצלחתי לטעון.</p>'; return; }
-          renderLog(log, res.data || []);
-        });
+      // רשימת ההקלטות בלבד, בלי האודיו. אם הטבלה עוד לא קיימת אצל
+      // מלווה מסוים, היומן נטען בכל זאת — רק בלי כפתורי ההשמעה.
+      Promise.all([
+        sb.from("checkins")
+          .select("day,attended,blockers,decided,created_at")
+          .eq("client_id", c.id)
+          .order("day", { ascending: false })
+          .limit(21),
+        sb.from("checkin_voice")
+          .select("day,slot,secs")
+          .eq("client_id", c.id)
+      ]).then(function (res) {
+        if (res[0].error) { log.innerHTML = '<p class="empty">לא הצלחתי לטעון.</p>'; return; }
+        var v = (res[1] && !res[1].error && res[1].data) || [];
+        renderLog(log, res[0].data || [], v, c.id);
+      });
     });
     card.insertBefore(btn, log);
 

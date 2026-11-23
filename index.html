@@ -85,6 +85,9 @@
       <h1 class="title">מה היה קשה היום בלהגיע לאימון?</h1>
       <p class="sub">משפט אחד, במילים שלך. ואם לא היה קשה — כתוב שלא היה.</p>
       <textarea id="hard" class="field area" rows="3" placeholder="משפט אחד"></textarea>
+      <!-- המקליט. כל ההיגיון ב-voice.js, והקופסה נשארת ריקה אם המכשיר
+           לא מאפשר הקלטה — כפתור שלא יעבוד לא מופיע בכלל. -->
+      <div class="voice" id="voice-hard" hidden></div>
       <button id="q2-next" class="btn">המשך</button>
     </section>
 
@@ -93,7 +96,16 @@
       <h1 class="title">מה גרם לך ללכת, או לא ללכת?</h1>
       <p class="sub">משפט אחד, במילים שלך. לא צריך להסביר.</p>
       <textarea id="decided" class="field area" rows="3" placeholder="משפט אחד"></textarea>
+      <div class="voice" id="voice-decided" hidden></div>
       <button id="q3-send" class="btn">שלח</button>
+    </section>
+
+    <!-- ====== בחירת יום לדיווח ====== -->
+    <section id="days" class="screen top" hidden>
+      <button id="days-back" class="back" type="button">← חזרה</button>
+      <h1 class="title">על איזה יום לדווח?</h1>
+      <p class="sub">אפשר להשלים יום שפספסת. יום שכבר דיווחת עליו — מה שתענה יחליף את מה שרשמת.</p>
+      <div id="day-list" class="choices"></div>
     </section>
 
     <!-- ====== הטאב "היום": הקו, המצב, והכפתור לשאלות ====== -->
@@ -117,6 +129,7 @@
       <p id="pending" class="msg" hidden>הדיווח יישלח כשתהיה רשת.</p>
       <p id="home-note" class="sub center"></p>
       <button id="report-btn" class="btn">לדווח על היום</button>
+      <button id="days-btn" class="btn ghost" type="button">לדווח על יום אחר</button>
 
       <!-- התזכורת היומית. ההסבר נקרא לפני הלחיצה, כי באייפון סירוב אחד
            הוא סופי. כל ההיגיון ב-push.js, ושלושת האלה נחשפים משם. -->
@@ -287,6 +300,7 @@
 </nav>
 
 <script src="config.js"></script>
+<script src="voice.js"></script>
 <script src="app.js"></script>
 <script src="push.js"></script>
 </body>

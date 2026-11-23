@@ -15,7 +15,7 @@
   function mine(base) { return base + "." + (state.code || "-"); }
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "home", "q1", "q2", "q3", "tasks", "board", "loop", "deck", "loading"];
+  var screens = ["welcome", "gate", "home", "days", "q1", "q2", "q3", "tasks", "board", "loop", "deck", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -53,10 +53,13 @@
     window.scrollTo(0, 0);
   }
 
-  // משאלה 2 ו-3 החזרה היא צעד אחורה. משאלה 1 היא יציאה אל הקו.
+  // משאלה 2 ו-3 החזרה היא צעד אחורה. משאלה 1 היא יציאה — אל רשימת
+  // הימים אם הדיווח נפתח משם, ואחרת אל הקו.
   el("back").addEventListener("click", function () {
+    if (window.voiceStop) window.voiceStop();
     if (!el("q3").hidden) show("q2");
     else if (!el("q2").hidden) show("q1");
+    else if (state.from === "days") { renderDays(); show("days"); }
     else renderHome(false, false);
   });
 
@@ -111,6 +114,9 @@
     code: null,
     client: null,
     checkins: [],
+    // היום שמדווחים עליו. בדרך כלל היום, אבל אפשר להשלים יום שפספסת.
+    day: null,
+    from: "home",
     answers: { attended: null, blockers: [], decided: "" }
   };
 
@@ -181,12 +187,15 @@
     });
   });
 
+  // הקלטה שרצה נשמרת לפני המעבר, ולא נזרקת.
   el("q2-next").addEventListener("click", function () {
+    if (window.voiceStop) window.voiceStop();
     state.answers.blockers = hardText();
     show("q3");
   });
 
   el("q3-send").addEventListener("click", function () {
+    if (window.voiceStop) window.voiceStop();
     state.answers.decided = el("decided").value.trim();
     send();
   });
@@ -202,7 +211,7 @@
   function payload() {
     return {
       p_code: state.code,
-      p_day: today(),
+      p_day: state.day || today(),
       p_attended: state.answers.attended,
       p_blockers: state.answers.blockers,
       p_decided: state.answers.decided
@@ -308,16 +317,120 @@
     return state.checkins.some(function (k) { return k.day === today(); });
   }
 
+  /* ================= לאיזה יום הדיווח שייך =================
+     עד כאן הדיווח היה תמיד על היום. מי שפספס ערב אחד לא יכול היה
+     להשלים אותו, והמשבצת נשארה ריקה בלי קשר למה שבאמת קרה. */
+
+  var ATT = { yes: "הגעת", no: "לא הגעת", none: "לא היה אימון" };
+  var DAYS_BACK = 14;
+
+  function dayKeyOf(d) {
+    var p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+
+  function shiftDay(n) {
+    var d = new Date();
+    d.setDate(d.getDate() + n);
+    return dayKeyOf(d);
+  }
+
+  function dayLabel(key) {
+    var p = String(key).split("-");
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return d.toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long" });
+  }
+
+  function checkinOf(key) {
+    for (var i = 0; i < state.checkins.length; i++) {
+      if (state.checkins[i].day === key) return state.checkins[i];
+    }
+    return null;
+  }
+
+  // אחורה עד שבועיים, ולא לפני תחילת הליווי — אין על מה לדווח שם.
+  function renderDays() {
+    var list = el("day-list");
+    list.innerHTML = "";
+    var startDate = (state.client && state.client.start_date) || "";
+
+    for (var i = 0; i < DAYS_BACK; i++) {
+      var key = shiftDay(-i);
+      if (startDate && key < startDate) break;
+
+      var rep = checkinOf(key);
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "choice day";
+
+      var name = document.createElement("span");
+      name.className = "day-name";
+      name.textContent = (i === 0 ? "היום · " : i === 1 ? "אתמול · " : "") + dayLabel(key);
+
+      var tag = document.createElement("span");
+      tag.className = "day-tag" + (rep ? " on" : "");
+      tag.textContent = rep ? (ATT[rep.attended] || "דיווחת") : "לא דיווחת";
+
+      b.appendChild(name);
+      b.appendChild(tag);
+      b.addEventListener("click", (function (k) {
+        return function () { openQuestions(k, "days"); };
+      })(key));
+
+      list.appendChild(b);
+    }
+  }
+
+  /* פותח את שלוש השאלות ליום מסוים. מה שכבר נרשם לאותו יום נטען
+     לשדות — "לשנות את מה שדיווחתי" צריך להראות מה נרשם, ולא דף ריק. */
+  function openQuestions(day, from) {
+    state.day  = day;
+    state.from = from || "home";
+
+    var rep = checkinOf(day);
+
+    state.answers = {
+      attended: rep ? rep.attended : null,
+      blockers: rep ? (rep.blockers || []) : [],
+      decided:  rep ? (rep.decided || "") : ""
+    };
+
+    el("hard").value    = (state.answers.blockers || []).join(", ");
+    el("decided").value = state.answers.decided || "";
+
+    Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
+      o.setAttribute("aria-pressed",
+        rep && o.getAttribute("data-v") === rep.attended ? "true" : "false");
+    });
+
+    // השורה מתחת לשאלה הראשונה אומרת על איזה יום מדובר. ביום שעבר
+    // זה ההבדל בין דיווח נכון לדיווח שנרשם על התאריך הלא נכון.
+    var isToday = day === today();
+    Array.prototype.slice.call(document.querySelectorAll(".today")).forEach(function (n) {
+      n.textContent = (isToday ? "" : "דיווח על ") + dayLabel(day);
+    });
+
+    el("again").textContent = isToday
+      ? "כבר דיווחת היום. מה שתענה עכשיו יחליף את מה שרשמת."
+      : "כבר דיווחת על היום הזה. מה שתענה עכשיו יחליף את מה שרשמת.";
+    el("again").hidden = !rep;
+
+    if (window.voiceSync) window.voiceSync(day);
+    show("q1");
+  }
+
   // מהקו אל השאלות
   el("report-btn").addEventListener("click", function () {
-    state.answers = { attended: null, blockers: [], decided: "" };
-    el("hard").value = "";
-    el("decided").value = "";
-    Array.prototype.slice.call(document.querySelectorAll("#q1 .choice")).forEach(function (o) {
-      o.setAttribute("aria-pressed", "false");
-    });
-    el("again").hidden = !reportedToday();
-    show("q1");
+    openQuestions(today(), "home");
+  });
+
+  el("days-btn").addEventListener("click", function () {
+    renderDays();
+    show("days");
+  });
+
+  el("days-back").addEventListener("click", function () {
+    renderHome(false, false);
   });
 
   /* ================= משימות ================= */
