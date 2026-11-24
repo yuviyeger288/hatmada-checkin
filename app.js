@@ -15,7 +15,8 @@
   function mine(base) { return base + "." + (state.code || "-"); }
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "home", "days", "q1", "q2", "q3", "tasks", "board", "loop", "deck", "loading"];
+  var screens = ["welcome", "gate", "home", "days", "q1", "q2", "q3", "tasks",
+                 "board", "loop", "stack", "env", "deck", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -451,13 +452,64 @@
   function taskOpen(key) { return openTasks.indexOf(key) !== -1; }
 
   function renderTasks() {
-    var any = taskOpen("loop") || taskOpen("board");
+    var any = ["loop", "board", "stack", "env"].some(taskOpen);
     el("tasks-title").textContent = any ? "מה פתוח עכשיו" : "עוד לא נפתחה משימה";
     var list = el("task-list");
     list.innerHTML = "";
     // לפי סדר התוכנית, וכל אחת נושאת את המקור שלה
     list.appendChild(withFrom(loopCard(), "משימה 1 · סרטון 1"));
     list.appendChild(withFrom(boardCard(), "משימה 2 · שיחה 2"));
+    list.appendChild(withFrom(stackCard(), "משימה 3 · סרטון 2"));
+    list.appendChild(withFrom(envCard(), "משימה 4 · סרטון 2"));
+  }
+
+  function stackCard() {
+    var open = taskOpen("stack");
+    if (!open) {
+      return taskCard({ open: false, title: "צימוד הרגלים", tag: "נעול",
+                        note: "תיפתח בהמשך." });
+    }
+    var a = answers.stack || { data: {}, done: false };
+    var n = (a.data.rows || []).filter(function (r) {
+      return String(r.after || "").trim() && String(r.then || "").trim();
+    }).length;
+    if (a.done) {
+      return taskCard({ open: true, title: "צימוד הרגלים", tag: "הושלם", tagClass: "ok",
+                        note: n + " משפטים של ״אחרי ש..., אני...״", onOpen: openStack });
+    }
+    if (n) {
+      return taskCard({ open: true, title: "צימוד הרגלים", tag: "באמצע", tagClass: "mid",
+                        note: n + " מוכנים.", onOpen: openStack });
+    }
+    return taskCard({ open: true, title: "צימוד הרגלים", tag: "לא התחיל",
+                      note: "משפט ״אחרי ש..., אני...״ לכל אימון השבוע.",
+                      onOpen: openStack });
+  }
+
+  function envCard() {
+    var open = taskOpen("env");
+    if (!open) {
+      return taskCard({ open: false, title: "עיצוב הסביבה", tag: "נעול",
+                        note: "תיפתח בהמשך." });
+    }
+    var a = answers.env || { data: {}, done: false };
+    var n = (a.data.adds || []).filter(function (r) {
+      return String(r.what || "").trim();
+    }).length;
+    if (a.done) {
+      return taskCard({ open: true, title: "עיצוב הסביבה", tag: "הושלם", tagClass: "ok",
+                        note: n + " גירויים נבנו" +
+                              (String(a.data.rm || "").trim() ? ", ואחד ירד" : ""),
+                        onOpen: openEnv });
+    }
+    if (n || String(a.data.rm || "").trim()) {
+      return taskCard({ open: true, title: "עיצוב הסביבה", tag: "באמצע", tagClass: "mid",
+                        note: n ? n + " גירויים עד כה." : "התחלת למלא.",
+                        onOpen: openEnv });
+    }
+    return taskCard({ open: true, title: "עיצוב הסביבה", tag: "לא התחיל",
+                      note: "לבנות גירויים שמושכים להרגל, ולהוריד אחד שמושך ממנו.",
+                      onOpen: openEnv });
   }
 
   // מאיזה שלב בתוכנית המשימה הגיעה. יושב מעל השם בכרטיס.
@@ -830,33 +882,68 @@
 
   /* ---------- מסך המצגת ---------- */
 
-  // אייפון לא מצייר PDF בתוך הדף — הוא מראה מסגרת ריקה ולא מדווח כלום.
-  function appleDevice() {
-    try {
-      var ua = navigator.userAgent || "";
-      return /iPad|iPhone|iPod/.test(ua) ||
-             (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-    } catch (e) { return false; }
+  // המצגת נקראת בתוך האפליקציה, כטקסט. היא לא PDF ולא מסגרת: שקף
+  // 1920×1080 יוצא בטלפון קטן מכדי לקרוא, ואייפון לא מצייר PDF בתוך הדף
+  // בכלל — ולכן הגרסה הקודמת מסרה אותו לצופה של המכשיר, והלקוח יצא
+  // מהאפליקציה בלי דרך חזרה. זה היה הבאג.
+  var deckCache = {};
+  var deckReturn = "loop";
+
+  function renderDeck(doc) {
+    var body = el("deck-body");
+    body.innerHTML = "";
+    (doc.slides || []).forEach(function (s, i) {
+      var card = document.createElement("article");
+      card.className = "deck-slide";
+
+      var n = document.createElement("span");
+      n.className = "n";
+      n.textContent = (i + 1) + " / " + doc.slides.length;
+      card.appendChild(n);
+
+      if (s.eyebrow) {
+        var e = document.createElement("p");
+        e.className = "eyebrow";
+        e.textContent = s.eyebrow;
+        card.appendChild(e);
+      }
+
+      var h = document.createElement("h2");
+      h.textContent = s.title || "";
+      card.appendChild(h);
+
+      (s.body || []).forEach(function (b) {
+        var p = document.createElement("p");
+        p.className = b.k || "note";
+        p.textContent = b.t;
+        card.appendChild(p);
+      });
+
+      body.appendChild(card);
+    });
+    el("deck-pos").textContent = (doc.slides || []).length + " עמודים";
   }
 
-  function openDeck(url) {
+  function openDeck(url, name, back) {
     if (!url) return;
-    el("deck-name").textContent = "משימה 1 · לולאת ההרגל";
-    if (appleDevice()) {
-      el("deck-frame").hidden = true;
-      el("deck-frame").removeAttribute("src");
-      el("deck-open").href = url;
-      el("deck-outside").hidden = false;
-    } else {
-      el("deck-outside").hidden = true;
-      el("deck-frame").src = url;
-      el("deck-frame").hidden = false;
-    }
+    deckReturn = back || "loop";
+    el("deck-name").textContent = name || "";
+    el("deck-error").hidden = true;
+    el("deck-body").innerHTML = "";
+    el("deck-pos").textContent = "";
     show("deck");
+    window.scrollTo(0, 0);
+
+    if (deckCache[url]) { renderDeck(deckCache[url]); return; }
+    fetch(url, { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (doc) { deckCache[url] = doc; renderDeck(doc); })
+      .catch(function () { el("deck-error").hidden = false; });
   }
 
   el("deck-back").addEventListener("click", function () {
-    el("deck-frame").removeAttribute("src");   // לעצור טעינה ברקע
+    if (deckReturn === "stack") { show("stack"); renderStack(); return; }
+    if (deckReturn === "env") { show("env"); renderEnv(); return; }
     show("loop");
     renderLoop();
   });
@@ -883,7 +970,9 @@
         // הסרטון הוא אתר חיצוני ונפתח בחלון משלו. המצגת שלנו, והיא
         // נפתחת כמסך בתוך האפליקציה — בלי ניווט ובלי מלכודת.
         if (pair[2]) a.setAttribute("target", "_blank");
-        else a.onclick = function () { openDeck(pair[1]); };
+        else a.onclick = function () {
+          openDeck(pair[1], "משימה 1 · לולאת ההרגל", "loop");
+        };
       });
     });
   }
@@ -955,6 +1044,307 @@
     renderTasks();
     show("tasks");
   });
+
+  /* ================= משימה 3 · צימוד הרגלים =================
+     שורה לכל פעם שההרגל אמור לקרות השבוע: "אחרי ש..." ו"אני...".
+     שורה נחשבת רק כששני הצדדים מלאים — עוגן בלי הרגל, או הרגל בלי
+     עוגן, זה בדיוק מה שהסרטון בא למנוע. */
+
+  var stackIntro = false;
+  var stackTimer = null;
+
+  function stackData() {
+    if (!answers.stack) answers.stack = { data: {}, done: false };
+    if (!answers.stack.data) answers.stack.data = {};
+    var d = answers.stack.data;
+    if (!Array.isArray(d.rows) || !d.rows.length) {
+      d.rows = [{ after: "", then: "" }, { after: "", then: "" }, { after: "", then: "" }];
+    }
+    return answers.stack;
+  }
+
+  function stackFull(d) {
+    return (d.rows || []).filter(function (r) {
+      return String(r.after || "").trim() && String(r.then || "").trim();
+    }).length;
+  }
+
+  function saveStack(done) {
+    var a = stackData();
+    a.data.rows = readStackRows();
+    if (typeof done === "boolean") a.done = done;
+    lsSet(mine(KEY_ANSWERS), JSON.stringify(answers));
+    if (stackTimer) clearTimeout(stackTimer);
+    stackTimer = setTimeout(function () {
+      rpc("app_save_answer", {
+        p_code: state.code, p_task: "stack", p_data: a.data, p_done: a.done
+      })
+        .then(function () { el("stack-offline").hidden = true; })
+        .catch(function () { el("stack-offline").hidden = false; });
+    }, 600);
+  }
+
+  function readStackRows() {
+    return Array.prototype.slice
+      .call(document.querySelectorAll("#stack-rows .stack-row"))
+      .map(function (row) {
+        return {
+          after: row.querySelector(".s-after").value.trim(),
+          then: row.querySelector(".s-then").value.trim()
+        };
+      });
+  }
+
+  function stackRow(r, i) {
+    var wrap = document.createElement("div");
+    wrap.className = "q stack-row";
+
+    var head = document.createElement("p");
+    head.className = "q-head";
+    head.innerHTML = "<b>אימון " + (i + 1) + "</b>";
+    wrap.appendChild(head);
+
+    [["s-after", "אחרי ש...", "פעולה שאני עושה ממילא, ברגע מדויק"],
+     ["s-then", "אני...", "ההרגל עצמו"]].forEach(function (f) {
+      var lab = document.createElement("p");
+      lab.className = "q-head";
+      lab.textContent = f[1];
+      var ta = document.createElement("textarea");
+      ta.className = "field area " + f[0];
+      ta.rows = 2;
+      ta.placeholder = f[2];
+      ta.value = (f[0] === "s-after" ? r.after : r.then) || "";
+      ta.addEventListener("input", function () { saveStack(); renderStackNote(); });
+      wrap.appendChild(lab);
+      wrap.appendChild(ta);
+    });
+    return wrap;
+  }
+
+  function renderStackNote() {
+    var a = stackData();
+    var n = stackFull({ rows: readStackRows() });
+    el("stack-note").textContent = a.done
+      ? "נשלח למלווה."
+      : (n ? n + " אימונים מוכנים." : "משפט אחד לפחות, ואפשר לסיים.");
+    var btn = el("stack-done");
+    btn.textContent = a.done ? "חזרה למשימות" : "סיימתי";
+    btn.disabled = !a.done && !n;
+  }
+
+  function renderStack() {
+    setDeck2Links();
+    el("stack-intro").hidden = !stackIntro;
+    el("stack-form").hidden = stackIntro;
+    if (stackIntro) return;
+    var a = stackData();
+    var host = el("stack-rows");
+    host.innerHTML = "";
+    a.data.rows.forEach(function (r, i) { host.appendChild(stackRow(r, i)); });
+    renderStackNote();
+  }
+
+  function openStack() {
+    var a = stackData();
+    stackIntro = !stackFull(a.data);
+    show("stack");
+    renderStack();
+  }
+
+  el("stack-start").addEventListener("click", function () {
+    stackIntro = false;
+    renderStack();
+    var first = document.querySelector("#stack-rows .s-after");
+    if (first) first.focus();
+  });
+
+  el("stack-add").addEventListener("click", function () {
+    var a = stackData();
+    a.data.rows = readStackRows();
+    a.data.rows.push({ after: "", then: "" });
+    renderStack();
+  });
+
+  el("stack-done").addEventListener("click", function () {
+    var a = stackData();
+    if (a.done) { renderTasks(); show("tasks"); return; }
+    saveStack(true);
+    renderStack();
+  });
+
+  el("stack-back").addEventListener("click", function () {
+    renderTasks();
+    show("tasks");
+  });
+
+  /* ================= משימה 4 · עיצוב הסביבה =================
+     שני שדות עיקריים ולא רשימה: הסרטון מבקש גירוי אחד להוסיף ואחד
+     להוריד. השדה השלישי, על מקום שמשמש לשני דברים, הוא רשות. */
+
+  var envIntro = false;
+  var envTimer = null;
+
+  function envData() {
+    if (!answers.env) answers.env = { data: {}, done: false };
+    if (!answers.env.data) answers.env.data = {};
+    var d = answers.env.data;
+    if (!Array.isArray(d.adds) || !d.adds.length) {
+      d.adds = [{ what: "", where: "" }, { what: "", where: "" },
+                { what: "", where: "" }];
+    }
+    return answers.env;
+  }
+
+  function envAddCount(d) {
+    return (d.adds || []).filter(function (r) {
+      return String(r.what || "").trim();
+    }).length;
+  }
+
+  function envStarted(d) {
+    return !!(envAddCount(d) || String(d.rm || "").trim() ||
+              String(d.place || "").trim());
+  }
+
+  // הרשימה היא העיקר כאן, ולכן גירוי אחד שנבנה מספיק כדי לסיים:
+  // הסרטון מבקש כמה שיותר, לא מספר קבוע.
+  function envReady(d) {
+    return envAddCount(d) > 0;
+  }
+
+  function readEnvRows() {
+    return Array.prototype.slice
+      .call(document.querySelectorAll("#env-rows .env-row"))
+      .map(function (row) {
+        return {
+          what: row.querySelector(".e-what").value.trim(),
+          where: row.querySelector(".e-where").value.trim()
+        };
+      });
+  }
+
+  function saveEnv(done) {
+    var a = envData();
+    a.data = {
+      adds:     readEnvRows(),
+      rm:       el("env-rm").value.trim(),
+      rmWhere:  el("env-rm-where").value.trim(),
+      place:    el("env-place").value.trim(),
+      purpose:  el("env-purpose").value.trim()
+    };
+    if (typeof done === "boolean") a.done = done;
+    lsSet(mine(KEY_ANSWERS), JSON.stringify(answers));
+    if (envTimer) clearTimeout(envTimer);
+    envTimer = setTimeout(function () {
+      rpc("app_save_answer", {
+        p_code: state.code, p_task: "env", p_data: a.data, p_done: a.done
+      })
+        .then(function () { el("env-offline").hidden = true; })
+        .catch(function () { el("env-offline").hidden = false; });
+    }, 600);
+  }
+
+  function envRow(r, i) {
+    var wrap = document.createElement("div");
+    wrap.className = "q env-row";
+    [["e-what", "גירוי " + (i + 1), "הציוד, התיק, הבגדים, הנעליים, פתק"],
+     ["e-where", "איפה בדיוק", "המקום שבו אני בטוח שאראה אותו"]].forEach(function (f) {
+      var lab = document.createElement("p");
+      lab.className = "q-head";
+      lab.textContent = f[1];
+      var ta = document.createElement("textarea");
+      ta.className = "field area " + f[0];
+      ta.rows = 2;
+      ta.placeholder = f[2];
+      ta.value = (f[0] === "e-what" ? r.what : r.where) || "";
+      ta.addEventListener("input", function () { saveEnv(); renderEnvNote(); });
+      wrap.appendChild(lab);
+      wrap.appendChild(ta);
+    });
+    return wrap;
+  }
+
+  function renderEnvNote() {
+    var a = envData();
+    var n = envAddCount({ adds: readEnvRows() });
+    el("env-note").textContent = a.done
+      ? "נשלח למלווה."
+      : (n ? n + " גירויים שבנית. כמה שיותר." : "גירוי אחד לפחות, ואפשר לסיים.");
+    var btn = el("env-done");
+    btn.textContent = a.done ? "חזרה למשימות" : "סיימתי";
+    btn.disabled = !a.done && !n;
+  }
+
+  function renderEnv() {
+    setDeck2Links();
+    el("env-intro").hidden = !envIntro;
+    el("env-form").hidden = envIntro;
+    if (envIntro) return;
+    var a = envData();
+    var host = el("env-rows");
+    host.innerHTML = "";
+    a.data.adds.forEach(function (r, i) { host.appendChild(envRow(r, i)); });
+    el("env-rm").value = a.data.rm || "";
+    el("env-rm-where").value = a.data.rmWhere || "";
+    el("env-place").value = a.data.place || "";
+    el("env-purpose").value = a.data.purpose || "";
+    renderEnvNote();
+  }
+
+  ["env-rm", "env-rm-where", "env-place", "env-purpose"].forEach(function (id) {
+    el(id).addEventListener("input", function () { saveEnv(); renderEnvNote(); });
+  });
+
+  el("env-add-row").addEventListener("click", function () {
+    var a = envData();
+    a.data.adds = readEnvRows();
+    a.data.adds.push({ what: "", where: "" });
+    renderEnv();
+  });
+
+  function openEnv() {
+    var a = envData();
+    envIntro = !envStarted(a.data);
+    show("env");
+    renderEnv();
+  }
+
+  el("env-start").addEventListener("click", function () {
+    envIntro = false;
+    renderEnv();
+    var first = document.querySelector("#env-rows .e-what");
+    if (first) first.focus();
+  });
+
+  el("env-done").addEventListener("click", function () {
+    var a = envData();
+    if (a.done) { renderTasks(); show("tasks"); return; }
+    saveEnv(true);
+    renderEnv();
+  });
+
+  el("env-back").addEventListener("click", function () {
+    renderTasks();
+    show("tasks");
+  });
+
+  /* הקישורים של שבוע 2 — אותו כלל כמו בשבוע 1: ריק = לא מוצג כלל,
+     כדי שלא יהיה כפתור שמוביל לשום מקום. הסרטון הוא אתר חיצוני
+     ונפתח בלשונית; המצגת היא שלנו ונפתחת כמסך בתוך האפליקציה. */
+  function setDeck2Links() {
+    var L = (window.CONFIG && window.CONFIG.LINKS) || {};
+    var here = el("stack").hidden ? "env" : "stack";
+    [["lnk-video2", L.video2, true], ["lnk-deck2", L.deck2, false]].forEach(function (pair) {
+      Array.prototype.slice.call(document.querySelectorAll("." + pair[0])).forEach(function (a) {
+        if (pair[1]) { a.href = pair[1]; a.hidden = false; }
+        else { a.removeAttribute("href"); a.hidden = true; }
+        if (pair[2]) a.setAttribute("target", "_blank");
+        else a.onclick = function () {
+          openDeck(pair[1], "שבוע 2 · שיהיה ברור", here);
+        };
+      });
+    });
+  }
 
   /* ================= הקוד שורד את ההתקנה ================= */
 

@@ -266,17 +266,126 @@
       </div>
     </section>
 
-    <!-- ====== מצגת, בתוך האפליקציה ======
-         בכוונה מסך ולא קישור: באפליקציה שמותקנת במסך הבית אין סרגל
-         דפדפן, וניווט החוצה משאיר את הלקוח בלי שום דרך לחזור. -->
-    <section id="deck" class="screen top" hidden>
-      <button id="deck-back" class="back" type="button">← חזרה למשימה</button>
-      <p class="eyebrow" id="deck-name"></p>
-      <iframe id="deck-frame" class="deck-frame" title="מצגת" hidden></iframe>
-      <div id="deck-outside" hidden>
-        <p class="sub">באייפון המצגת לא נפתחת בתוך הדף. היא תיפתח בחלון של המכשיר, ויש שם כפתור סגירה שמחזיר לכאן.</p>
-        <a id="deck-open" class="btn" target="_blank" rel="noopener">לפתוח את המצגת</a>
+    <!-- ====== הטאב "צימוד הרגלים" · משימה 3 ======
+         מהסרטון של שבוע 2. העוגן הוא העיקר, ולכן שלושת המבחנים יושבים
+         ליד השדות ולא בסוף: מי שכותב "אחרי בית ספר" לא עשה כלום. -->
+    <section id="stack" class="screen top" hidden>
+      <button id="stack-back" class="back" type="button">← למשימות</button>
+
+      <div id="stack-intro">
+        <p class="eyebrow">משימה 3 · צימוד הרגלים</p>
+        <h1 class="title">מה הולך לקרות כאן</h1>
+        <p class="sub">לכל פעם שההרגל אמור לקרות השבוע, משפט אחד:</p>
+        <p class="sub"><b>אחרי ש..., אני...</b></p>
+        <p class="rule">לא ״מתי״. ״אחרי מה״.</p>
+        <p class="sub">הרעיון: במקום להמציא גירוי חדש, אתה תולה את ההרגל על פעולה שאתה כבר עושה ממילא. ככה אין חלון זמן להתווכח בו עם עצמך.</p>
+        <div class="links">
+          <a class="lnk lnk-video2" target="_blank" rel="noopener" hidden>לצפות בסרטון</a>
+          <button class="lnk lnk-deck2" type="button" hidden>המצגת של הסרטון</button>
+        </div>
+        <button id="stack-start" class="btn">מתחילים</button>
       </div>
+
+      <div id="stack-form" hidden>
+        <p class="eyebrow">משימה 3 · צימוד הרגלים</p>
+        <h1 class="title">אחרי ש..., אני...</h1>
+
+        <div class="links">
+          <a class="lnk lnk-video2" target="_blank" rel="noopener" hidden>לצפות בסרטון</a>
+          <button class="lnk lnk-deck2" type="button" hidden>המצגת של הסרטון</button>
+        </div>
+
+        <div class="q">
+          <p class="q-head">שלושה מבחנים לעוגן. אם הוא נופל באחד — תחליף אותו.</p>
+          <ul class="legend">
+            <li><b>1</b> רגע אחד, לא תקופה. אם אפשר לשאול ״מתי בדיוק מתוך זה״ — זה לא עוגן</li>
+            <li><b>2</b> זה קרה גם היום. אם לא קרה היום, זאת תקווה ולא עוגן</li>
+            <li><b>3</b> קורה בדיוק בימים שההרגל אמור לקרות</li>
+          </ul>
+        </div>
+
+        <div id="stack-rows"></div>
+        <button id="stack-add" class="lnk" type="button">+ עוד אימון</button>
+
+        <p id="stack-note" class="sub center"></p>
+        <button id="stack-done" class="btn">סיימתי</button>
+        <p id="stack-offline" class="msg" hidden>שמור אצלך במכשיר. יעלה כשתהיה רשת.</p>
+      </div>
+    </section>
+
+    <!-- ====== הטאב "עיצוב הסביבה" · משימה 4 ======
+         שני שדות בלבד, בכוונה. הסרטון אומר גירוי אחד להוסיף ואחד
+         להוריד; רשימה ארוכה יותר היא תוכנית, לא פעולה. -->
+    <section id="env" class="screen top" hidden>
+      <button id="env-back" class="back" type="button">← למשימות</button>
+
+      <div id="env-intro">
+        <p class="eyebrow">משימה 4 · עיצוב הסביבה</p>
+        <h1 class="title">מה הולך לקרות כאן</h1>
+        <p class="sub">אתה הולך <b>לבנות</b> גירויים שמושכים אותך להרגל שאתה רוצה, <b>ולהוריד</b> גירוי שמושך אותך להרגל שאתה לא רוצה.</p>
+        <p class="rule">אדריכל של הסביבה, לא קורבן שלה.</p>
+        <p class="sub">הגירוי הכי חזק שלנו הוא הראייה. ככל שיש יותר דברים בסביבה שמרמזים לך על הפעולה, כך גדל הסיכוי שתעשה אותה.</p>
+        <div class="links">
+          <a class="lnk lnk-video2" target="_blank" rel="noopener" hidden>לצפות בסרטון</a>
+          <button class="lnk lnk-deck2" type="button" hidden>המצגת של הסרטון</button>
+        </div>
+        <button id="env-start" class="btn">מתחילים</button>
+      </div>
+
+      <div id="env-form" hidden>
+        <p class="eyebrow">משימה 4 · עיצוב הסביבה</p>
+        <h1 class="title">בונים ומורידים גירויים</h1>
+
+        <div class="links">
+          <a class="lnk lnk-video2" target="_blank" rel="noopener" hidden>לצפות בסרטון</a>
+          <button class="lnk lnk-deck2" type="button" hidden>המצגת של הסרטון</button>
+        </div>
+
+        <div class="q">
+          <p class="q-head"><b>1. מה אני בונה</b></p>
+          <p class="sub">כל גירוי שירמז לך על ההרגל. <b>כמה שיותר.</b> לכל אחד — מה הוא, ואיפה בדיוק הוא יהיה.</p>
+        </div>
+        <div id="env-rows"></div>
+        <button id="env-add-row" class="lnk" type="button">+ עוד גירוי</button>
+
+        <div class="q">
+          <p class="q-head"><b>2. מה אני מוריד</b></p>
+          <p class="sub">גירוי אחד שגורם לך להתחיל הרגל רע שאתה לא רוצה.</p>
+          <textarea id="env-rm" class="field area" rows="2" placeholder="מה אני רואה ממקומי שמושך אותי לשם"></textarea>
+          <p class="q-head">ולאן הוא עובר?</p>
+          <textarea id="env-rm-where" class="field area" rows="2" placeholder="מקום שבו לא אראה אותו בכלל"></textarea>
+        </div>
+
+        <div class="q">
+          <p class="q-head"><b>3. מקום אחד, מטרה אחת</b></p>
+          <p class="sub">הרגל נקשר לא רק לגירוי אחד אלא למקום כולו: הספה מקושרת לטלוויזיה, המיטה לשינה. כשמקום אחד משמש לשני דברים, הדבר הקל יותר תמיד מנצח.</p>
+          <p class="q-head">איזה מקום אצלך משמש לכמה דברים? (אפשר לדלג)</p>
+          <textarea id="env-place" class="field area" rows="2" placeholder="הספה, השולחן בחדר, המיטה"></textarea>
+          <p class="q-head">ומה המטרה האחת שאתה נותן לו מעכשיו?</p>
+          <textarea id="env-purpose" class="field area" rows="2" placeholder="על השולחן אני רק לומד — שום דבר אחר"></textarea>
+        </div>
+
+        <p id="env-note" class="sub center"></p>
+        <button id="env-done" class="btn">סיימתי</button>
+        <p id="env-offline" class="msg" hidden>שמור אצלך במכשיר. יעלה כשתהיה רשת.</p>
+      </div>
+    </section>
+
+    <!-- ====== המצגת ======
+         נקראת בתוך האפליקציה, כטקסט ולא כתמונה של שקף.
+         שקף 1920×1080 — בין אם כ-PDF ובין אם במסגרת — יוצא בטלפון קטן
+         מכדי לקרוא, ואייפון בכלל לא מצייר PDF בתוך הדף ולכן האפליקציה
+         נאלצה למסור אותו לצופה של המכשיר. שם נגמרה האפליקציה, ומשם לא
+         הייתה דרך חזרה. זה היה הבאג, ולא כפתור החזרה.
+         סרגל החזרה דביק, כך שהוא על המסך גם באמצע הגלילה. -->
+    <section id="deck" class="screen top" hidden>
+      <div class="deck-bar">
+        <button id="deck-back" class="back" type="button">← חזרה למשימה</button>
+        <span class="deck-pos" id="deck-pos"></span>
+      </div>
+      <p class="eyebrow" id="deck-name"></p>
+      <div id="deck-body" class="deck-body"></div>
+      <p class="sub center" id="deck-error" hidden>לא הצלחנו לטעון את המצגת. נסה שוב כשיש רשת.</p>
     </section>
 
     <!-- ====== טעינה ====== -->

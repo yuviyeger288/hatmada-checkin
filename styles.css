@@ -593,16 +593,79 @@ body.has-tabs #app{
 
 /* ---------- מסך המצגת ---------- */
 
-.deck-frame{
-  flex:1 1 auto;
-  width:100%;
-  min-height:60vh;
-  border:1px solid var(--card-border);
-  border-radius:var(--r-md);
-  background:var(--card);
+/* המצגת, כחומר קריאה.
+   הסרגל דביק בכוונה: בגרסה הקודמת כפתור החזרה נגלל מהמסך, ומי שהיה
+   באמצע המצגת לא ראה שום דרך לחזור. */
+.deck-bar{
+  position:sticky;
+  top:0;
+  z-index:5;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:0 -4px 4px;
+  padding:10px 4px;
+  background:var(--background);
+  border-bottom:1px solid var(--card-border);
 }
-.deck-frame[hidden]{display:none}
-#deck-outside[hidden]{display:none}
+.deck-pos{font-size:13px;color:var(--text-dim)}
+
+.deck-body{display:flex;flex-direction:column;gap:14px}
+
+.deck-slide{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:var(--r-lg);
+  padding:18px 16px;
+}
+.deck-slide .n{
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  color:var(--text-dim);
+  margin-bottom:6px;
+}
+.deck-slide .eyebrow{color:var(--primary-dark);margin-bottom:6px}
+.deck-slide h2{
+  font-size:22px;
+  font-weight:800;
+  line-height:1.25;
+  margin:0 0 10px;
+  color:var(--text);
+}
+.deck-slide .lead{
+  font-size:17px;
+  font-weight:600;
+  line-height:1.5;
+  margin:0 0 8px;
+  color:var(--text);
+}
+.deck-slide .note{
+  font-size:15px;
+  line-height:1.6;
+  margin:0 0 8px;
+  color:var(--text-muted);
+}
+.deck-slide .item{
+  font-size:15px;
+  line-height:1.6;
+  margin:0 0 6px;
+  padding-inline-start:16px;
+  position:relative;
+  color:var(--text-muted);
+}
+.deck-slide .item::before{
+  content:"";
+  position:absolute;
+  inset-inline-start:0;
+  top:9px;
+  width:6px;
+  height:6px;
+  border-radius:var(--r-full);
+  background:var(--primary);
+}
+.deck-slide p:last-child{margin-bottom:0}
 #deck-outside{display:flex;flex-direction:column;gap:14px}
 
 /* ---------- הקלטה בדיווח היומי ---------- */
