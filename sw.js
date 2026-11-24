@@ -64,7 +64,8 @@ self.addEventListener("push", function (e) {
   try { if (e.data) d = e.data.json() || {}; } catch (x) { d = {}; }
 
   var title = d.title || "בונים התמדה";
-  var body  = d.body  || "עוד לא דיווחת על היום. שתי דקות וזה נסגר.";
+  // אותו משפט שהאתר כבר אומר במסך "היום" (app.js), ולא ניסוח נוסף
+  var body  = d.body  || "עוד לא דיווחת היום.";
 
   e.waitUntil(self.registration.showNotification(title, {
     body: body,

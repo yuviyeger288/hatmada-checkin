@@ -44,7 +44,8 @@ const PUSH_HOUR = parseInt(env("PUSH_HOUR") || "21", 10);
 
 const TEXT = {
   title: env("PUSH_TITLE") || "בונים התמדה",
-  body: env("PUSH_BODY") || "עוד לא דיווחת על היום. שתי דקות וזה נסגר.",
+  // אותו משפט שהאתר כבר אומר במסך "היום" (app.js), ולא ניסוח נוסף
+  body: env("PUSH_BODY") || "עוד לא דיווחת היום.",
 };
 
 /* ---------- השעה בישראל ---------- */
