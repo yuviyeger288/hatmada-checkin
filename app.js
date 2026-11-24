@@ -888,18 +888,22 @@
   // מהאפליקציה בלי דרך חזרה. זה היה הבאג.
   var deckCache = {};
   var deckReturn = "loop";
+  var deckCount = 0;
+  var deckIdx = 0;
 
+  /* שקף אחד לכל מסך, ולא גלילה אחת ארוכה (יובל, 24-11). כל השקפים
+     נבנים פעם אחת ורק אחד גלוי — חמישה־עשר כרטיסים הם כלום לדפדפן,
+     ומעבר בין שקפים לא נוגע ברשת ולא בונה כלום מחדש. */
   function renderDeck(doc) {
     var body = el("deck-body");
     body.innerHTML = "";
-    (doc.slides || []).forEach(function (s, i) {
+    var slides = doc.slides || [];
+    deckCount = slides.length;
+
+    slides.forEach(function (s, i) {
       var card = document.createElement("article");
       card.className = "deck-slide";
-
-      var n = document.createElement("span");
-      n.className = "n";
-      n.textContent = (i + 1) + " / " + doc.slides.length;
-      card.appendChild(n);
+      card.hidden = i !== 0;
 
       if (s.eyebrow) {
         var e = document.createElement("p");
@@ -921,8 +925,67 @@
 
       body.appendChild(card);
     });
-    el("deck-pos").textContent = (doc.slides || []).length + " עמודים";
+
+    var many = deckCount > 1;
+    el("deck-nav").hidden   = !many;
+    el("deck-track").hidden = !many;
+    showSlide(0);
   }
+
+  function showSlide(i) {
+    if (!deckCount) return;
+    if (i < 0) i = 0;
+    if (i > deckCount - 1) i = deckCount - 1;
+    deckIdx = i;
+
+    var cards = el("deck-body").children;
+    for (var k = 0; k < cards.length; k++) cards[k].hidden = (k !== i);
+
+    // "3 / 15" מתהפך בשורה בעברית ונקרא "15 / 3". המילים מפרידות
+    // בין המספרים ופותרות את זה, וזה גם הניסוח שכבר יש בשאלות.
+    el("deck-pos").textContent = "שקף " + (i + 1) + " מתוך " + deckCount;
+    el("deck-fill").style.width = ((i + 1) / deckCount * 100) + "%";
+    el("deck-prev").disabled = (i === 0);
+    el("deck-next").disabled = (i === deckCount - 1);
+    window.scrollTo(0, 0);
+  }
+
+  el("deck-prev").addEventListener("click", function () { showSlide(deckIdx - 1); });
+  el("deck-next").addEventListener("click", function () { showSlide(deckIdx + 1); });
+
+  /* החלקה. בעברית השקף הבא נמצא משמאל — כמו דף בספר עברי שמושכים
+     ימינה כדי להתקדם — ולכן תנועה ימינה היא "הבא".
+     גלילה אנכית בשקף ארוך לא נחשבת החלקה, ולכן נדרשת תנועה אופקית
+     גדולה יותר מהאנכית. */
+  (function () {
+    var x0 = 0, y0 = 0, live = false;
+    var body = el("deck-body");
+
+    body.addEventListener("touchstart", function (e) {
+      if (!e.touches || e.touches.length !== 1) { live = false; return; }
+      live = true;
+      x0 = e.touches[0].clientX;
+      y0 = e.touches[0].clientY;
+    }, { passive: true });
+
+    body.addEventListener("touchend", function (e) {
+      if (!live) return;
+      live = false;
+      var t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      var dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) < 45) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      showSlide(deckIdx + (dx > 0 ? 1 : -1));
+    }, { passive: true });
+  })();
+
+  // מקלדת, למי שפותח את המצגת במחשב
+  document.addEventListener("keydown", function (e) {
+    if (el("deck").hidden) return;
+    if (e.key === "ArrowLeft") showSlide(deckIdx + 1);
+    else if (e.key === "ArrowRight") showSlide(deckIdx - 1);
+  });
 
   function openDeck(url, name, back) {
     if (!url) return;
@@ -931,6 +994,10 @@
     el("deck-error").hidden = true;
     el("deck-body").innerHTML = "";
     el("deck-pos").textContent = "";
+    el("deck-nav").hidden = true;
+    el("deck-track").hidden = true;
+    deckCount = 0;
+    deckIdx = 0;
     show("deck");
     window.scrollTo(0, 0);
 

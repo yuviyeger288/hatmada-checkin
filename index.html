@@ -383,9 +383,15 @@
         <button id="deck-back" class="back" type="button">← חזרה למשימה</button>
         <span class="deck-pos" id="deck-pos"></span>
       </div>
+      <div class="deck-track" id="deck-track" hidden><div class="deck-fill" id="deck-fill"></div></div>
       <p class="eyebrow" id="deck-name"></p>
       <div id="deck-body" class="deck-body"></div>
       <p class="sub center" id="deck-error" hidden>לא הצלחנו לטעון את המצגת. נסה שוב כשיש רשת.</p>
+      <!-- בעברית השקף הבא נמצא משמאל, ולכן "הבא" הוא הכפתור השמאלי. -->
+      <div class="deck-nav" id="deck-nav" hidden>
+        <button id="deck-prev" class="deck-arrow" type="button">הקודם</button>
+        <button id="deck-next" class="deck-arrow go" type="button">הבא</button>
+      </div>
     </section>
 
     <!-- ====== טעינה ====== -->

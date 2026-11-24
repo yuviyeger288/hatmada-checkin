@@ -611,14 +611,74 @@ body.has-tabs #app{
 }
 .deck-pos{font-size:13px;color:var(--text-dim)}
 
-.deck-body{display:flex;flex-direction:column;gap:14px}
+.deck-body{flex:1 1 auto;display:flex;flex-direction:column}
 
+/* מד התקדמות, באותה שפה של מד השאלות */
+.deck-track{
+  height:4px;
+  border-radius:var(--r-full);
+  background:var(--card-border);
+  overflow:hidden;
+  margin-bottom:6px;
+}
+.deck-track[hidden]{display:none}
+.deck-fill{
+  height:100%;
+  width:0;
+  background:var(--primary);
+  border-radius:var(--r-full);
+  transition:width .2s ease;
+}
+
+/* הניווט דביק לתחתית, כמו שהסרגל דביק לראש: בשקף ארוך הכפתורים
+   לא נגללים מהמסך ואי אפשר להיתקע. */
+.deck-nav{
+  position:sticky;
+  bottom:0;
+  margin-top:auto;
+  display:flex;
+  gap:10px;
+  padding:12px 0 calc(env(safe-area-inset-bottom,0px) + 12px);
+  background:var(--background);
+}
+.deck-nav[hidden]{display:none}
+.deck-arrow{
+  flex:1;
+  font:inherit;
+  font-size:16px;
+  font-weight:700;
+  padding:14px 12px;
+  border-radius:var(--r-md);
+  border:1px solid var(--card-border);
+  background:var(--card);
+  color:var(--text-muted);
+  cursor:pointer;
+}
+.deck-arrow.go{
+  background:var(--primary);
+  border-color:var(--primary);
+  color:var(--on-primary);
+}
+.deck-arrow:active{background:var(--card-selected)}
+.deck-arrow.go:active{background:var(--primary-dark)}
+.deck-arrow:disabled{opacity:.35;cursor:default}
+.deck-arrow:disabled:active{background:var(--card)}
+.deck-arrow.go:disabled:active{background:var(--primary)}
+
+/* שקף אחד לכל מסך. גובה מינימלי כדי ששקף קצר לא ייראה אבוד
+   בראש הדף, והתוכן מרוכז אנכית — ככה שקף נראה. */
 .deck-slide{
   background:var(--card);
   border:1px solid var(--card-border);
   border-radius:var(--r-lg);
-  padding:18px 16px;
+  padding:22px 18px;
+  min-height:46vh;
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
 }
+.deck-slide[hidden]{display:none}
 .deck-slide .n{
   display:block;
   font-size:12px;
