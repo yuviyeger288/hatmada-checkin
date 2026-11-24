@@ -459,7 +459,9 @@
     // מתג פתיחה — הלקוח רואה את המשימה רק אחרי שלוחצים כאן
     // המין הדקדוקי נשמר לכל משימה — "לוח" זכר, "לולאה" נקבה
     [["loop", "לולאת ההרגל", "פתוחה", "נעולה"],
-     ["board", "לוח ההרגלים", "פתוח", "נעול"]].forEach(function (pair) {
+     ["board", "לוח ההרגלים", "פתוח", "נעול"],
+     ["stack", "צימוד הרגלים", "פתוח", "נעול"],
+     ["env", "עיצוב הסביבה", "פתוח", "נעול"]].forEach(function (pair) {
       var key = pair[0], title = pair[1], openWord = pair[2], shutWord = pair[3];
 
       var lock = document.createElement("button");
