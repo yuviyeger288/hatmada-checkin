@@ -359,6 +359,27 @@
     stats.appendChild(stat("דיווח אחרון", gapText(gap), gap !== null && gap >= 2));
     card.appendChild(stats);
 
+    /* כניסה לאפליקציה בתור הלקוח, כדי לבדוק דברים באמת ולא לנחש.
+       לקוח שכבר דיווח פעם אחת מקבל אישור לפני הפתיחה: דיווח שיישלח
+       משם נרשם על שמו, וזה כבר קרה כאן פעם אחת בטעות. ללקוח בדיקה,
+       שאין לו דיווחים, אין מה להזהיר ואין על מה ללחוץ פעמיים. */
+    var asClient = document.createElement("a");
+    asClient.className = "toggle";
+    asClient.href = "index.html?c=" + encodeURIComponent(c.code || "");
+    asClient.target = "_blank";
+    asClient.rel = "noopener";
+    asClient.textContent = "לראות את האפליקציה כמו " + c.first_name + " ↗";
+    asClient.addEventListener("click", function (e) {
+      if (!c.last_day) return;
+      var ok = window.confirm(
+        "זאת האפליקציה של " + c.first_name + " עצמו.\n" +
+        "כל דיווח שתשלח משם יירשם על שמו.\n\n" +
+        "לבדיקות עדיף להיכנס כמו לקוח הבדיקה. להמשיך בכל זאת?"
+      );
+      if (!ok) e.preventDefault();
+    });
+    card.appendChild(asClient);
+
     var log = document.createElement("div");
     log.className = "log";
     log.hidden = true;
