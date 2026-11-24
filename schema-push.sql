@@ -131,3 +131,51 @@ grant execute on function public.push_today()          to service_role;
 grant execute on function public.push_due_today()      to service_role;
 grant execute on function public.push_mark_sent(text)  to service_role;
 grant execute on function public.push_forget(text)     to service_role;
+
+-- ====================================================================
+-- תזכורת בדיקה, מדף הצוות
+--
+-- המלווה רוצה לראות את ההתראה על המכשיר שלו בלי לחכות ל-21:00.
+-- הכפתור בדף הצוות קורא לאותה פונקציה שה-cron קורא לה, ללקוח אחד.
+--
+-- שתי הפונקציות כאן מוענקות ל-service_role בלבד, כמו שאר השולח.
+-- ההרשאה של המלווה לא נבדקת בדפדפן ולא נבדקת בקוד — היא נבדקת כאן,
+-- מול אותן טבלאות שמדיניות ה-RLS משתמשת בהן.
+--
+-- p_user מתקבל במפורש ולא דרך auth.uid(), כי השולח פונה למסד עם
+-- המפתח הסודי ולכן auth.uid() ריק אצלו. את זהות המלווה הוא מאמת
+-- מול Supabase Auth לפני הקריאה הזאת.
+-- ====================================================================
+
+-- האם המשתמש הזה רשאי לשלוח תזכורת בדיקה ללקוח הזה:
+-- המלווה שהלקוח משויך אליו, או מנהל.
+create or replace function public.push_may_test(p_user uuid, p_client uuid)
+returns boolean
+language sql security definer set search_path = public as $$
+  select exists (
+    select 1
+    from public.clients c
+    join public.coaches co on co.user_id = p_user
+    where c.id = p_client
+      and (co.is_admin or c.coach_id = co.id)
+  );
+$$;
+
+-- המכשירים של לקוח אחד, לשליחת בדיקה.
+--
+-- בכוונה לא push_due_today: בדיקה נשלחת גם למי שכבר דיווח היום, אחרת
+-- אי אפשר לבדוק אחרי שדיווחת. ובכוונה בלי push_mark_sent אחריה —
+-- אם הבדיקה היתה מסמנת את היום, התזכורת האמיתית של אותו ערב לא היתה יוצאת.
+create or replace function public.push_targets_for(p_client uuid)
+returns table (endpoint text, p256dh text, auth text)
+language sql security definer set search_path = public as $$
+  select s.endpoint, s.p256dh, s.auth
+  from public.push_subscriptions s
+  where s.client_id = p_client;
+$$;
+
+revoke all on function public.push_may_test(uuid, uuid)    from anon, authenticated, public;
+revoke all on function public.push_targets_for(uuid)       from anon, authenticated, public;
+
+grant execute on function public.push_may_test(uuid, uuid) to service_role;
+grant execute on function public.push_targets_for(uuid)    to service_role;

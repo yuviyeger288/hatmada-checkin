@@ -34,6 +34,12 @@ const SECRET_KEY =
   env("SUPABASE_SECRET_KEY") ||
   env("SB_SECRET_KEY");
 
+/* המפתח הציבורי, לאימות הטוקן של המלווה מול Supabase Auth בלבד */
+const PUBLIC_KEY =
+  env("SUPABASE_ANON_KEY") ||
+  env("SUPABASE_PUBLISHABLE_KEY") ||
+  env("SB_PUBLISHABLE_KEY");
+
 const VAPID: Vapid = {
   publicKey: env("VAPID_PUBLIC_KEY"),
   privateKey: env("VAPID_PRIVATE_KEY"),
@@ -46,6 +52,12 @@ const TEXT = {
   title: env("PUSH_TITLE") || "בונים התמדה",
   // אותו משפט שהאתר כבר אומר במסך "היום" (app.js), ולא ניסוח נוסף
   body: env("PUSH_BODY") || "עוד לא דיווחת היום.",
+};
+
+/* תזכורת הבדיקה אומרת שהיא בדיקה. היא נשלחת למלווה, לא ללקוח. */
+const TEST_TEXT = {
+  title: "בונים התמדה",
+  body: "בדיקה. ככה נראית התזכורת.",
 };
 
 /* ---------- השעה בישראל ---------- */
@@ -100,6 +112,32 @@ async function rpc(fn: string, args: unknown): Promise<any> {
   return res.status === 204 ? null : await res.json();
 }
 
+/* ---------- מי הקורא ----------
+   הפונקציה נפרסה עם verify_jwt=false (הנימוק ב-supabase/config.toml),
+   ולכן אימות הטוקן של המלווה הוא שלנו. Supabase Auth הוא זה שקובע אם
+   הטוקן אמיתי, ולא אנחנו. */
+
+async function callerUserId(req: Request): Promise<string | null> {
+  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  // טוקן שהוא עצמו המפתח הסודי אינו משתמש מחובר
+  if (sameSecret(token, SECRET_KEY)) return null;
+
+  try {
+    const res = await fetch(PROJECT_URL.replace(/\/+$/, "") + "/auth/v1/user", {
+      headers: {
+        "Authorization": "Bearer " + token,
+        "apikey": PUBLIC_KEY || SECRET_KEY,
+      },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return (user && typeof user.id === "string" && user.id) || null;
+  } catch {
+    return null;
+  }
+}
+
 /* ---------- ההרצה ---------- */
 
 interface Summary {
@@ -146,6 +184,54 @@ async function run(): Promise<Summary> {
   return out;
 }
 
+/* ---------- תזכורת בדיקה, ללקוח אחד ----------
+   שני הבדלים מהמסלול הרגיל, ושניהם במתכוון:
+
+   1. נשלח גם למי שכבר דיווח היום (push_targets_for ולא push_due_today),
+      אחרת אי אפשר לבדוק אחרי שדיווחת.
+   2. **אין push_mark_sent.** אם הבדיקה היתה מסמנת את היום כ"נשלח",
+      התזכורת האמיתית של אותו ערב לא היתה יוצאת — והבדיקה היתה הורסת
+      בדיוק את מה שהיא באה לבדוק. */
+
+interface TestResult {
+  status: "sent" | "no-device" | "no-key" | "failed";
+  devices: number;
+  sent: number;
+  problems: string[];
+}
+
+async function runTest(clientId: string): Promise<TestResult> {
+  const out: TestResult = { status: "failed", devices: 0, sent: 0, problems: [] };
+
+  const rows = (await rpc("push_targets_for", { p_client: clientId })) as Subscription[] | null;
+  const targets = rows || [];
+  out.devices = targets.length;
+
+  if (!targets.length) {
+    out.status = "no-device";
+    return out;
+  }
+
+  for (const sub of targets) {
+    const r = await send(sub, TEST_TEXT, VAPID);
+
+    if (r.ok) { out.sent++; continue; }
+
+    if (r.gone) {
+      await rpc("push_forget", { p_endpoint: sub.endpoint });
+      out.problems.push("מנוי שלא קיים יותר — נמחק");
+      continue;
+    }
+
+    let where = "?";
+    try { where = new URL(sub.endpoint).host; } catch { /* כתובת לא תקינה */ }
+    out.problems.push(where + " → " + r.status + " " + r.detail);
+  }
+
+  out.status = out.sent > 0 ? "sent" : "failed";
+  return out;
+}
+
 /* ---------- השער ---------- */
 
 function json(body: unknown, status = 200): Response {
@@ -156,22 +242,48 @@ function json(body: unknown, status = 200): Response {
 }
 
 export async function handler(req: Request): Promise<Response> {
-  if (!allowed(req)) return json({ error: "unauthorized" }, 401);
-
   if (!PROJECT_URL || !SECRET_KEY) {
     return json({ error: "missing SUPABASE_URL or secret key" }, 500);
   }
-  if (!VAPID.publicKey || !VAPID.privateKey) {
+
+  let body: Record<string, any> = {};
+  try { body = (await req.json()) || {}; } catch { /* גוף ריק — ככה ה-cron קורא */ }
+
+  const haveKeys = !!(VAPID.publicKey && VAPID.privateKey);
+
+  /* ---- מסלול הבדיקה: מלווה מחובר, לקוח אחד ----
+     כאן אין מפתח סודי, ולכן ההרשאה נבדקת פעמיים: Supabase Auth מאמת
+     שהטוקן אמיתי, ו-push_may_test במסד קובע אם המלווה הזה אחראי על
+     הלקוח הזה. אף אחת מהשתיים אינה בדפדפן. */
+  if (body.test === true) {
+    const clientId = String(body.client_id || "");
+    if (!clientId) return json({ status: "bad-request" }, 400);
+
+    const uid = await callerUserId(req);
+    if (!uid) return json({ status: "not-allowed" }, 401);
+
+    const may = await rpc("push_may_test", { p_user: uid, p_client: clientId });
+    if (may !== true) return json({ status: "not-allowed" }, 403);
+
+    // לפני שיובל סיים את ההגדרה אין מה לשלוח. זאת תשובה, לא תקלה.
+    if (!haveKeys) return json({ status: "no-key", devices: 0, sent: 0, problems: [] });
+
+    try {
+      return json(await runTest(clientId));
+    } catch (e) {
+      return json({ status: "failed", devices: 0, sent: 0, problems: [String(e)] }, 500);
+    }
+  }
+
+  /* ---- המסלול הרגיל: רק ה-cron, ורק עם המפתח הסודי ---- */
+  if (!allowed(req)) return json({ error: "unauthorized" }, 401);
+  if (!haveKeys) {
     return json({ error: "missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY" }, 500);
   }
 
   // force מדלג על בדיקת השעה בלבד. שתי ההחלטות נשמרות גם אז: מי
   // שדיווח לא יקבל, ומי שכבר קיבל היום לא יקבל שוב.
-  let force = false;
-  try {
-    const body = await req.json();
-    force = body && body.force === true;
-  } catch { /* גוף ריק זה המצב הרגיל כשה-cron קורא */ }
+  const force = body.force === true;
 
   const hour = israelHour();
   if (!force && hour !== PUSH_HOUR) {

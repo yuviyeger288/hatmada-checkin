@@ -522,6 +522,9 @@
       card.appendChild(lock);
     });
 
+    // "לשלוח תזכורת עכשיו" — הכל ב-push-test.js
+    if (window.pushTestButton) card.appendChild(window.pushTestButton(sb, c));
+
     return card;
   }
 
