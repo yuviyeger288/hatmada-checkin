@@ -58,6 +58,7 @@ process.env.VAPID_PUBLIC_KEY = vapidPub;
 process.env.VAPID_PRIVATE_KEY = vapidPriv;
 process.env.VAPID_SUBJECT = "mailto:a@b.co";
 process.env.PUSH_HOUR = "20";
+process.env.SUPABASE_ANON_KEY = "sb_publishable_test";
 
 /* ---------- בדל ל-fetch ---------- */
 
@@ -66,6 +67,13 @@ interface Call { kind: string; endpoint?: string }
 let calls: Call[] = [];
 let due: typeof SUB[] = [];
 let pushStatus = 201;
+
+// מסלול הבדיקה מדף הצוות
+const COACH_TOKEN = "coach-jwt-not-a-real-one";
+const COACH_UID = "11111111-1111-1111-1111-111111111111";
+const CLIENT_ID = "22222222-2222-2222-2222-222222222222";
+let targets: typeof SUB[] = [];
+let mayTest = true;
 
 const realFetch = globalThis.fetch;
 
@@ -88,7 +96,32 @@ globalThis.fetch = (async (input: any, init?: any) => {
         status: 200, headers: { "Content-Type": "application/json" },
       });
     }
+    if (fn === "push_may_test") {
+      ok("ההרשאה נבדקת על המשתמש והלקוח שנשלחו", args.p_user === COACH_UID && args.p_client === CLIENT_ID);
+      return new Response(JSON.stringify(mayTest), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (fn === "push_targets_for") {
+      return new Response(JSON.stringify(targets), {
+        status: 200, headers: { "Content-Type": "application/json" },
+      });
+    }
     return new Response(null, { status: 204 });
+  }
+
+  // אימות הטוקן של המלווה מול Supabase Auth
+  if (url.indexOf("/auth/v1/user") > -1) {
+    const h = (init && init.headers) || {};
+    calls.push({ kind: "auth" });
+    // המפתח הציבורי, לא הסודי — אין שום סיבה לשלוח את הסודי לכאן
+    ok("אימות הטוקן נעשה עם המפתח הציבורי", h["apikey"] === "sb_publishable_test");
+    if (String(h["Authorization"] || "") !== "Bearer " + COACH_TOKEN) {
+      return new Response("bad token", { status: 401 });
+    }
+    return new Response(JSON.stringify({ id: COACH_UID }), {
+      status: 200, headers: { "Content-Type": "application/json" },
+    });
   }
 
   // שירות ההתראות
@@ -213,6 +246,103 @@ ok("היומן מזכיר את שירות ההתראות",
   out.problems.length === 1 && out.problems[0].indexOf("push.example.net") === 0);
 ok("והיומן לא מכיל את כתובת המכשיר",
   out.problems[0].indexOf("/push/abc123") === -1);
+
+/* ================= תזכורת בדיקה מדף הצוות ================= */
+
+function postTest(clientId: string | null, token: string | null = COACH_TOKEN): Request {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = "Bearer " + token;
+  const payload: Record<string, unknown> = { test: true };
+  if (clientId) payload.client_id = clientId;
+  return new Request("https://project.supabase.co/functions/v1/daily-push", {
+    method: "POST", headers, body: JSON.stringify(payload),
+  });
+}
+
+/* ---------- 9. נשלח — ובלי לסמן את היום ---------- */
+
+console.log("בדיקה מדף הצוות: נשלחת");
+calls = []; targets = [SUB]; mayTest = true; pushStatus = 201;
+res = await mod.handler(postTest(CLIENT_ID));
+out = await res.json();
+check("200", res.status, 200);
+check("נשלח", out.status, "sent");
+check("מכשיר אחד", out.devices, 1);
+check("אחד נשלח", out.sent, 1);
+check("הסדר: אימות הטוקן, הרשאה, מכשירים, שליחה",
+  calls.map((c) => c.kind), ["auth", "push_may_test", "push_targets_for", "push"]);
+
+// זאת הבדיקה המרכזית של כל המסלול הזה
+ok("push_mark_sent לא נקראה — התזכורת של הערב לא בוטלה",
+  calls.every((c) => c.kind !== "push_mark_sent"));
+ok("ולא push_due_today — בדיקה נשלחת גם למי שכבר דיווח",
+  calls.every((c) => c.kind !== "push_due_today"));
+
+/* ---------- 10. אין מכשיר רשום ---------- */
+
+console.log("בדיקה כשאין מכשיר רשום ללקוח");
+calls = []; targets = []; mayTest = true;
+res = await mod.handler(postTest(CLIENT_ID));
+out = await res.json();
+check("no-device", out.status, "no-device");
+check("אפס מכשירים", out.devices, 0);
+ok("ולא נשלחה שום התראה", calls.every((c) => c.kind !== "push"));
+
+/* ---------- 11. לקוח של מלווה אחר ---------- */
+
+console.log("בדיקה על לקוח שאינו שלו");
+calls = []; targets = [SUB]; mayTest = false;
+res = await mod.handler(postTest(CLIENT_ID));
+out = await res.json();
+check("403", res.status, 403);
+check("not-allowed", out.status, "not-allowed");
+ok("לא נשלפו מכשירים ולא נשלח כלום",
+  calls.every((c) => c.kind !== "push_targets_for" && c.kind !== "push"));
+
+/* ---------- 12. בלי טוקן, ועם טוקן שגוי ---------- */
+
+console.log("בדיקה בלי טוקן תקף");
+calls = []; mayTest = true;
+res = await mod.handler(postTest(CLIENT_ID, null));
+check("401", res.status, 401);
+ok("ולא נגענו במסד בכלל", calls.every((c) => c.kind !== "push_may_test"));
+
+res = await mod.handler(postTest(CLIENT_ID, "some-other-token"));
+check("טוקן שגוי גם הוא 401", res.status, 401);
+
+calls = [];
+res = await mod.handler(postTest(null));
+check("בלי מזהה לקוח — 400", res.status, 400);
+ok("ובלי לפנות לשום מקום", calls.length === 0);
+
+/* ---------- 13. מסלול הבדיקה לא פתח את מסלול ה-cron ---------- */
+
+console.log("המסלול הרגיל עדיין דורש את המפתח הסודי");
+calls = []; due = [SUB];
+res = await mod.handler(new Request("https://x/y", {
+  method: "POST",
+  headers: { "Content-Type": "application/json", "Authorization": "Bearer " + COACH_TOKEN },
+  body: JSON.stringify({ force: true }),
+}));
+check("טוקן של מלווה לא מפעיל שליחה לכולם", res.status, 401);
+ok("ולא נשלח כלום", calls.every((c) => c.kind !== "push"));
+
+/* ---------- 14. לפני שיובל הגדיר מפתחות ---------- */
+
+console.log("בדיקה לפני שהוגדרו מפתחות VAPID");
+const keptPub = process.env.VAPID_PUBLIC_KEY;
+const keptPriv = process.env.VAPID_PRIVATE_KEY;
+process.env.VAPID_PUBLIC_KEY = "";
+process.env.VAPID_PRIVATE_KEY = "";
+const nokey = await import("../functions/daily-push/index.ts?nokey");
+calls = []; targets = [SUB]; mayTest = true;
+res = await nokey.handler(postTest(CLIENT_ID));
+out = await res.json();
+check("200 — זאת תשובה ולא תקלה", res.status, 200);
+check("no-key", out.status, "no-key");
+ok("ולא נשלחה שום התראה", calls.every((c) => c.kind !== "push"));
+process.env.VAPID_PUBLIC_KEY = keptPub;
+process.env.VAPID_PRIVATE_KEY = keptPriv;
 
 /* ---------- סיום ---------- */
 
