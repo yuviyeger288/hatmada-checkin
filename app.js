@@ -16,14 +16,14 @@
 
   var el = function (id) { return document.getElementById(id); };
   var screens = ["welcome", "gate", "login", "admin", "home", "days", "q1", "q2", "q3",
-                 "tasks", "board", "loop", "stack", "env", "deck", "loading"];
+                 "tasks", "tools", "board", "loop", "stack", "env", "deck", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
 
   // מסך שהוא מקום מקבל סרגל טאבים. מסך שהוא שלב לא מקבל, כדי שלא
   // יהיה אפשר לברוח באמצע שאלה ולהשאיר דיווח חצי.
-  var TABBED = { home: true, tasks: true };
+  var TABBED = { home: true, tasks: true, tools: true };
 
   function show(id) {
     screens.forEach(function (s) {
@@ -68,6 +68,7 @@
     t.addEventListener("click", function () {
       var target = t.getAttribute("data-tab");
       if (target === "home") renderHome(false, false);
+      else if (target === "tools") { renderTools(); show("tools"); }
       else { renderTasks(); show(target); }
     });
   });
@@ -589,16 +590,103 @@
 
   function taskOpen(key) { return openTasks.indexOf(key) !== -1; }
 
+  /* ---- שיעורים ----
+     המסלול לפי הסדר. כל שיעור נושא את החומר שלו — הסרטון והמצגת —
+     ואת התרגיל שיצא ממנו. קודם החומר היה קבור בתוך התרגיל, וזה אמר
+     ללקוח שהתרגיל הוא העיקר והסרטון תוספת. כאן השיעור הוא היחידה.
+
+     לא כל שיעור הוא סרטון: לוח ההרגלים הגיע משיחה, ולכן אין לו קישורים
+     והוא עדיין עומד בשורה כשיעור בפני עצמו. */
+
+  var LESSONS = [
+    { name: "שיעור 1", video: "video1", deck: "deck1", tasks: ["loop"] },
+    { name: "שיחה 2",  video: null,     deck: null,    tasks: ["board"] },
+    { name: "שיעור 2", video: "video2", deck: "deck2", tasks: ["stack", "env"] }
+  ];
+
+  function cardFor(key) {
+    if (key === "loop")  return loopCard();
+    if (key === "board") return boardCard();
+    if (key === "stack") return stackCard();
+    return envCard();
+  }
+
+  function lessonLinks(lesson) {
+    var L   = (window.CONFIG && window.CONFIG.LINKS) || {};
+    var vid = lesson.video ? L[lesson.video] : "";
+    var dek = lesson.deck  ? L[lesson.deck]  : "";
+    if (!vid && !dek) return null;
+
+    var row = document.createElement("div");
+    row.className = "lesson-links";
+
+    if (vid) {
+      // יוטיוב נפתח בלשונית נפרדת בכוונה: מתוך אפליקציה מותקנת אין
+      // דרך חזרה מניווט באותו חלון.
+      var a = document.createElement("a");
+      a.className = "lesson-link";
+      a.href = vid;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "לצפות בסרטון ↗";
+      row.appendChild(a);
+    }
+    if (dek) {
+      var b = document.createElement("button");
+      b.className = "lesson-link";
+      b.type = "button";
+      b.textContent = "לפתוח את המצגת";
+      b.addEventListener("click", function () { openDeck(dek, lesson.name, "tasks"); });
+      row.appendChild(b);
+    }
+    return row;
+  }
+
   function renderTasks() {
     var any = ["loop", "board", "stack", "env"].some(taskOpen);
-    el("tasks-title").textContent = any ? "מה פתוח עכשיו" : "עוד לא נפתחה משימה";
+    el("tasks-title").textContent = any ? "המסלול שלך" : "השיעור הראשון ייפתח בקרוב";
+
     var list = el("task-list");
     list.innerHTML = "";
-    // לפי סדר התוכנית, וכל אחת נושאת את המקור שלה
-    list.appendChild(withFrom(loopCard(), "משימה 1 · סרטון 1"));
-    list.appendChild(withFrom(boardCard(), "משימה 2 · שיחה 2"));
-    list.appendChild(withFrom(stackCard(), "משימה 3 · סרטון 2"));
-    list.appendChild(withFrom(envCard(), "משימה 4 · סרטון 2"));
+
+    LESSONS.forEach(function (lesson) {
+      var box = document.createElement("div");
+      box.className = "lesson";
+
+      var head = document.createElement("h2");
+      head.className = "lesson-name";
+      head.textContent = lesson.name;
+      box.appendChild(head);
+
+      // שיעור שכל התרגילים שלו עדיין נעולים לא חושף את החומר שלו.
+      // אחרת הנעילה היא תפאורה: הכרטיס אומר "תיפתח בהמשך" והסרטון
+      // פתוח לצפייה לידו.
+      var links = lesson.tasks.some(taskOpen) ? lessonLinks(lesson) : null;
+      if (links) box.appendChild(links);
+
+      lesson.tasks.forEach(function (key) { box.appendChild(cardFor(key)); });
+      list.appendChild(box);
+    });
+  }
+
+  /* ---- כלים ----
+     אותם תוצרים, בלי חלוקה לשבועות. מוצגים רק אלה שכבר נפתחו: כלי
+     נעול הוא לא כלי, והוא כבר מופיע בשיעורים עם התווית שלו. */
+  function renderTools() {
+    var open = ["loop", "board", "stack", "env"].filter(taskOpen);
+    el("tools-title").textContent = open.length ? "מה שבנית" : "כאן יישב מה שתבנה";
+
+    var list = el("tools-list");
+    list.innerHTML = "";
+
+    if (!open.length) {
+      var p = document.createElement("p");
+      p.className = "sub center";
+      p.textContent = "כל תרגיל שתעשה בשיעורים יישאר כאן, לחזור אליו מתי שתרצה.";
+      list.appendChild(p);
+      return;
+    }
+    open.forEach(function (key) { list.appendChild(cardFor(key)); });
   }
 
   function stackCard() {
@@ -650,14 +738,8 @@
                       onOpen: openEnv });
   }
 
-  // מאיזה שלב בתוכנית המשימה הגיעה. יושב מעל השם בכרטיס.
-  function withFrom(card, from) {
-    var s = document.createElement("span");
-    s.className = "task-from";
-    s.textContent = from;
-    card.insertBefore(s, card.firstChild);
-    return card;
-  }
+  // ‏withFrom נמחקה כשהשיעורים קיבלו כותרת משלהם: המקור של התרגיל
+  // כתוב עכשיו מעל הקבוצה, ולא שוב על כל כרטיס בתוכה.
 
   /* כרטיס משימה — אותו מבנה לכל המשימות. מחזיר כפתור מושבת כשהיא נעולה. */
   function taskCard(opts) {
@@ -1147,6 +1229,8 @@
   }
 
   el("deck-back").addEventListener("click", function () {
+    // מצגת שנפתחה מרמת השיעור חוזרת לשיעורים, לא לתוך התרגיל.
+    if (deckReturn === "tasks") { renderTasks(); show("tasks"); return; }
     if (deckReturn === "stack") { show("stack"); renderStack(); return; }
     if (deckReturn === "env") { show("env"); renderEnv(); return; }
     show("loop");

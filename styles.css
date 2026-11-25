@@ -866,3 +866,15 @@ body.has-tabs #app{
 .a-said b{color:var(--text-muted);font-weight:700;font-size:13px}
 .a-empty{margin:0;color:var(--text-muted);font-size:15px}
 .a-audio{width:100%;height:38px;margin-top:3px}
+
+/* ===== קבוצת שיעור =====
+   הסרטון והמצגת יושבים מעל התרגיל ולא בתוכו, כדי שהשיעור ייראה
+   כיחידה אחת ולא כאילו התרגיל הוא הדבר והחומר תוספת. */
+.lesson{margin-bottom:26px}
+.lesson-name{margin:0 0 2px;font-size:17px;font-weight:800}
+.lesson-links{display:flex;flex-direction:row-reverse;flex-wrap:wrap;gap:16px;margin:0 0 12px}
+.lesson-link{
+  font:inherit;font-size:14px;font-weight:700;color:var(--primary);
+  background:none;border:0;padding:2px 0;cursor:pointer;text-decoration:none;
+}
+.lesson-link:active{color:var(--primary-dark)}
