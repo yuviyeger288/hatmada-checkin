@@ -816,3 +816,11 @@ body.has-tabs #app{
   border-color:var(--primary);
   background:var(--card-selected);
 }
+
+/* יציאה מהחשבון. עמומה וקטנה — היא לא מתחרה על כפתור הדיווח. */
+.linkout{
+  font:inherit;font-size:14px;font-weight:700;
+  color:var(--text-dim);background:none;border:0;cursor:pointer;
+  padding:12px 6px;margin-top:2px;align-self:center;
+}
+.linkout:active{color:var(--primary)}

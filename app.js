@@ -530,6 +530,44 @@
     show("days");
   });
 
+  /* ================= יציאה מהחשבון =================
+     עד עכשיו לא היתה דרך חוץ: מי שנכנס פעם אחת נשאר הלקוח הזה
+     לתמיד, וכל דיווח מהמכשיר נרשם על שמו. זה בסדר ללקוח עצמו,
+     ולא בסדר למי שנכנס רגע לראות מה הלקוח רואה.
+
+     לפני שמוחקים, מנסים לשלוח דיווח שממתין לרשת. אם השליחה
+     נכשלת משאירים אותו במכוון ולא מוחקים: הוא נושא את הקוד
+     שלו בתוכו, אז בפתיחה הבאה הוא יישלח ללקוח הנכון. למחוק
+     אותו היה אומר לאבד דיווח של מישהו אחר.
+
+     כשהתזכורות יעלו באוויר, כאן יהיה גם המקום לבטל את מנוי המכשיר,
+     אחרת הטלפון ימשיך לקבל את התזכורת של הלקוח שיצא. */
+
+  function logOut() {
+    var board   = mine(KEY_BOARD);
+    var answers = mine(KEY_ANSWERS);
+    show("loading");
+    flushPending().then(function () {
+      lsDel(KEY_CODE);
+      lsDel(board);
+      lsDel(answers);
+      try { document.cookie = "bhc=;path=/;max-age=0;samesite=lax"; } catch (e) {}
+      try { history.replaceState(null, "", location.pathname); } catch (e) {}
+      state.code = null;
+      state.client = null;
+      state.checkins = [];
+      state.day = null;
+      state.from = "home";
+      state.answers = { attended: null, blockers: [], decided: "" };
+      openLogin(lsGet(KEY_PENDING) ? "יצאת. דיווח אחד עוד ממתין לרשת ויישלח לבד." : null);
+    });
+  }
+
+  el("logout-btn").addEventListener("click", function () {
+    if (!window.confirm("לצאת מהחשבון? כדי לחזור תצטרך שם משתמש וסיסמה.")) return;
+    logOut();
+  });
+
   el("days-back").addEventListener("click", function () {
     renderHome(false, false);
   });
@@ -1617,7 +1655,9 @@
     lsDel(KEY_BOARD); lsDel(KEY_ANSWERS);   // שאריות מלפני ההפרדה לפי קוד
 
     var code = (initialParams.get("c") || lsGet(KEY_CODE) || codeFromCookie() || "").trim().toLowerCase();
-    if (!code) { openGate(); return; }
+    // מי שאין לו קוד שמור מגיע למסך הכניסה, ולא למסך הקוד. מהיום
+    // לקוח חדש מקבל שם משתמש, והקוד נשאר כמוצא אחורי מאחורי כפתור.
+    if (!code) { openLogin(); return; }
     flushPending().then(function () { tryCode(code); });
   }
 
