@@ -15,8 +15,8 @@
   function mine(base) { return base + "." + (state.code || "-"); }
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "login", "home", "days", "q1", "q2", "q3", "tasks",
-                 "board", "loop", "stack", "env", "deck", "loading"];
+  var screens = ["welcome", "gate", "login", "admin", "home", "days", "q1", "q2", "q3",
+                 "tasks", "board", "loop", "stack", "env", "deck", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
   var STEPS_TOTAL = 3;
@@ -168,7 +168,7 @@
     }).then(function (r) {
       return r.json().then(function (b) {
         if (!r.ok || !b.access_token) throw new Error("bad-login");
-        return b.access_token;
+        return b;
       });
     });
   }
@@ -206,25 +206,25 @@
     show("loading");
 
     signIn(user, pass)
-      .then(function (token) {
-        return asUser("app_my_code", token).then(function (code) {
-          // מלווה או מנהל שמקליד כאן את הפרטים שלו אין לו מסלול,
-          // ולכן אומרים לו לאן ללכת במקום "סיסמה שגויה".
-          if (!code) return asUser("me_is_admin", token).then(function (adm) {
-            throw new Error(adm ? "staff" : "no-client");
-          });
-          return String(code);
-        });
-      })
-      .then(function (code) {
+      .then(function (sess) {
+        var token = sess.access_token;
         el("login-pass").value = "";
-        tryCode(code);
+        return asUser("app_my_code", token).then(function (code) {
+          // מלווה שנכנס כאן אין לו מסלול, ולכן הוא הולך לניהול ולא
+          // מקבל "סיסמה שגויה". השאלה היא "האם אתה מלווה" ולא "האם
+          // אתה מנהל", כך שגם מלווה רגיל נכנס — ו-RLS היא שמגבילה
+          // אותו ללקוחות שלו בלבד.
+          if (!code) return asUser("me_coach_id", token).then(function (coach) {
+            if (!coach) throw new Error("no-client");
+            openAdmin(sess);
+          });
+          tryCode(String(code));
+        });
       })
       .catch(function (e) {
         el("login-pass").value = "";
         var why = e && e.message;
         openLogin(
-          why === "staff"     ? "זאת כניסה של מלווה. הניהול נמצא בדף הצוות." :
           why === "no-client" ? "המשתמש הזה עוד לא מחובר למסלול. תשאל את יובל." :
                                 "שם המשתמש או הסיסמה לא נכונים."
         );
@@ -1651,14 +1651,305 @@
     renderHome(false, false);
   }
 
+  /* ================= מסך הניהול =================
+     מה שדף הצוות מראה, בתוך האפליקציה עצמה, כדי שלא יהיו שתי כתובות
+     ושתי כניסות לאותו אדם.
+
+     הביטחון כאן הוא לא המסך אלא השרת: הקריאות נעשות עם הטוקן של
+     המשתמש המחובר ולא עם המפתח הציבורי, ו-RLS היא שמחליטה מה חוזר.
+     לקוח שיגיע לכאן יקבל רשימה ריקה, ולא מסך חסום שאפשר לעקוף.
+
+     v1: מי הלקוחות, המספרים, ומה הם כתבו והקליטו. פתיחת משימות,
+     לוח ההרגלים ולולאת ההרגל נשארו בינתיים בדף הצוות. */
+
+  var KEY_REFRESH = "bh.refresh";
+  var session = { token: null };
+
+  // התווית היא שם השאלה עצמה, ולא "הקלטה 1" ו"הקלטה 2": כששומעים
+  // הקלטה צריך לדעת על מה היא עונה.
+  var A_SLOT  = { hard: "מה היה קשה", decided: "מה הכריע" };
+  var A_SLOTS = ["hard", "decided"];
+  var A_ATT = {
+    yes:  { cls: "yes",  text: "הגיע" },
+    no:   { cls: "no",   text: "לא הגיע" },
+    none: { cls: "none", text: "אין אימון" }
+  };
+
+  function apiGet(path) {
+    var cfg = window.CONFIG || {};
+    return fetch(base() + "/rest/v1/" + path, {
+      headers: {
+        "apikey": cfg.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + session.token
+      }
+    }).then(function (r) {
+      if (!r.ok) throw new Error("http-" + r.status);
+      return r.json();
+    });
+  }
+
+  function node(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function aStat(k, v, warn) {
+    var box = node("div", "a-stat" + (warn ? " warn" : ""));
+    box.appendChild(node("span", "a-k", k));
+    box.appendChild(node("span", "a-v", v));
+    return box;
+  }
+
+  function aGap(last) {
+    if (!last) return "עוד לא";
+    var d = Math.round((Date.parse(today()) - Date.parse(String(last))) / 86400000);
+    return d <= 0 ? "היום" : d === 1 ? "אתמול" : "לפני " + d + " ימים";
+  }
+
+  function aSaid(label, text) {
+    var p = node("p", "a-said");
+    p.appendChild(node("b", null, label + ": "));
+    p.appendChild(document.createTextNode(text));
+    return p;
+  }
+
+  function b64ToBlob(b64, mime) {
+    var bin = atob(b64), n = bin.length, arr = new Uint8Array(n);
+    for (var i = 0; i < n; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: mime || "audio/mp4" });
+  }
+
+  function secsLabel(s) {
+    s = Math.max(0, Math.round(s || 0));
+    var r = s % 60;
+    return Math.floor(s / 60) + ":" + (r < 10 ? "0" : "") + r;
+  }
+
+  /* האודיו עצמו נשלף רק בלחיצה. היומן טוען רשימה בלבד, אחרת כל פתיחה
+     של כרטיס לקוח היתה מורידה את כל ההקלטות שלו בבת אחת. */
+  function aVoice(clientId, day, slot, secs) {
+    var wrap  = node("div");
+    var label = A_SLOT[slot] || slot;
+    var btn   = node("button", "a-toggle", "\u25b6 " + label + " \u00b7 הקלטה " + secsLabel(secs));
+    btn.type = "button";
+
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+      btn.textContent = "טוען\u2026";
+      apiGet("checkin_voice?select=b64,mime&client_id=eq." + encodeURIComponent(clientId) +
+             "&day=eq." + encodeURIComponent(day) +
+             "&slot=eq." + encodeURIComponent(slot))
+        .then(function (rows) {
+          var r = rows && rows[0];
+          if (!r || !r.b64) throw new Error("empty");
+          var audio = node("audio", "a-audio");
+          audio.controls = true;
+          audio.preload  = "metadata";
+          audio.src = URL.createObjectURL(b64ToBlob(r.b64, r.mime));
+          wrap.innerHTML = "";
+          wrap.appendChild(node("p", "a-said", label + " \u00b7 הקלטה:"));
+          wrap.appendChild(audio);
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.textContent = "לא הצלחתי לטעון. ללחוץ שוב";
+        });
+    });
+
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  /* יום שיש בו הקלטה אבל הדיווח לא נשלח מופיע בכל זאת. בלי זה ההקלטה
+     יושבת במסד ואף אחד לא יודע שהיא שם. */
+  function aLog(box, rows, voice, clientId) {
+    box.innerHTML = "";
+    voice = voice || [];
+
+    var seen = {};
+    rows.forEach(function (r) { seen[String(r.day)] = true; });
+
+    var all = rows.slice();
+    voice.forEach(function (v) {
+      var d = String(v.day);
+      if (seen[d]) return;
+      seen[d] = true;
+      all.push({ day: d, attended: null, blockers: [], decided: "", partial: true });
+    });
+    all.sort(function (x, y) {
+      return String(x.day) < String(y.day) ? 1 : String(x.day) > String(y.day) ? -1 : 0;
+    });
+
+    if (!all.length) {
+      box.appendChild(node("p", "a-empty", "עוד אין דיווחים."));
+      return;
+    }
+
+    all.forEach(function (r) {
+      var row = node("div", "a-row");
+      var top = node("div", "a-row-top");
+      top.appendChild(node("span", "a-day", dayLabel(r.day)));
+
+      if (r.partial) {
+        top.appendChild(node("span", "a-tag none", "לא נשלח"));
+      } else {
+        var a = A_ATT[r.attended] || A_ATT.none;
+        top.appendChild(node("span", "a-tag " + a.cls, a.text));
+      }
+      row.appendChild(top);
+
+      var hard = (r.blockers || []).join(", ");
+      if (hard) row.appendChild(aSaid("מה היה קשה", hard));
+      if (r.decided) row.appendChild(aSaid("מה הכריע", r.decided));
+
+      A_SLOTS.forEach(function (slot) {
+        for (var i = 0; i < voice.length; i++) {
+          if (String(voice[i].day) === String(r.day) && voice[i].slot === slot) {
+            row.appendChild(aVoice(clientId, r.day, slot, voice[i].secs));
+            return;
+          }
+        }
+      });
+
+      box.appendChild(row);
+    });
+  }
+
+  function adminCard(c) {
+    var card = node("div", "a-card");
+
+    var top = node("div", "a-top");
+    top.appendChild(node("h2", "a-name", c.first_name));
+    if (c.destination) top.appendChild(node("p", "a-dest", c.destination));
+    card.appendChild(top);
+
+    var total = (c.weekly_target || 5) * (c.program_weeks || 8);
+    var gap   = aGap(c.last_day);
+    var late  = gap !== "היום" && gap !== "אתמול";
+
+    var stats = node("div", "a-stats");
+    stats.appendChild(aStat("השבוע \u00b7 מראשון", c.attended_week + " / " + (c.weekly_target || 5)));
+    stats.appendChild(aStat("בסך הכול", c.attended_total + " / " + total));
+    stats.appendChild(aStat("דיווחים השבוע", String(c.reported_week)));
+    stats.appendChild(aStat("דיווח אחרון", gap, late));
+    card.appendChild(stats);
+
+    var log = node("div", "a-log");
+    log.hidden = true;
+
+    var shut = "מה הוא כתב והקליט \u2193";
+    var btn  = node("button", "a-toggle", shut);
+    btn.type = "button";
+    var loaded = false;
+
+    btn.addEventListener("click", function () {
+      if (!log.hidden) { log.hidden = true; btn.textContent = shut; return; }
+      log.hidden = false;
+      btn.textContent = "סגור \u2191";
+      if (loaded) return;
+      loaded = true;
+      log.innerHTML = "";
+      log.appendChild(node("p", "a-empty", "טוען\u2026"));
+
+      var id = encodeURIComponent(c.id);
+      Promise.all([
+        apiGet("checkins?select=day,attended,blockers,decided&client_id=eq." + id +
+               "&order=day.desc&limit=21"),
+        // אם טבלת ההקלטות לא נגישה, היומן נטען בכל זאת, רק בלי השמעה.
+        apiGet("checkin_voice?select=day,slot,secs&client_id=eq." + id)
+          .catch(function () { return []; })
+      ]).then(function (res) {
+        aLog(log, res[0] || [], res[1] || [], c.id);
+      }).catch(function () {
+        log.innerHTML = "";
+        log.appendChild(node("p", "a-empty", "לא הצלחתי לטעון."));
+      });
+    });
+
+    card.appendChild(btn);
+    card.appendChild(log);
+    return card;
+  }
+
+  function renderAdmin() {
+    var box = el("admin-list");
+    box.innerHTML = "";
+    box.appendChild(node("p", "a-empty", "טוען\u2026"));
+
+    apiGet("client_summary?select=*")
+      .then(function (rows) {
+        box.innerHTML = "";
+        if (!rows || !rows.length) {
+          box.appendChild(node("p", "a-empty", "עוד אין לקוחות."));
+          return;
+        }
+        rows.sort(function (x, y) {
+          return String(x.first_name || "").localeCompare(String(y.first_name || ""), "he");
+        });
+        rows.forEach(function (c) { box.appendChild(adminCard(c)); });
+      })
+      .catch(function () {
+        box.innerHTML = "";
+        box.appendChild(node("p", "a-empty", "לא הצלחתי לטעון את הלקוחות."));
+      });
+  }
+
+  function openAdmin(sess) {
+    session.token = sess.access_token;
+    if (sess.refresh_token) lsSet(KEY_REFRESH, sess.refresh_token);
+    el("admin-who").textContent = "ניהול";
+    show("admin");
+    renderAdmin();
+  }
+
+  /* הטוקן של Supabase פג אחרי שעה, ולכן מה שנשמר הוא טוקן הרענון.
+     בלעדיו היה צריך להקליד סיסמה בכל פתיחה. Supabase מחליף אותו בכל
+     רענון, ולכן שומרים את החדש ולא משאירים את הישן. */
+  function refreshSession(rt) {
+    var cfg = window.CONFIG || {};
+    return fetch(base() + "/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": cfg.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ refresh_token: rt })
+    }).then(function (r) {
+      if (!r.ok) throw new Error("refresh");
+      return r.json();
+    }).then(function (b) {
+      if (!b.access_token) throw new Error("refresh");
+      return b;
+    });
+  }
+
+  el("admin-out").addEventListener("click", function () {
+    if (!window.confirm("לצאת מהניהול? כדי לחזור תצטרך שם משתמש וסיסמה.")) return;
+    session.token = null;
+    lsDel(KEY_REFRESH);
+    el("admin-list").innerHTML = "";
+    openLogin();
+  });
+
   function boot() {
     lsDel(KEY_BOARD); lsDel(KEY_ANSWERS);   // שאריות מלפני ההפרדה לפי קוד
 
     var code = (initialParams.get("c") || lsGet(KEY_CODE) || codeFromCookie() || "").trim().toLowerCase();
     // מי שאין לו קוד שמור מגיע למסך הכניסה, ולא למסך הקוד. מהיום
     // לקוח חדש מקבל שם משתמש, והקוד נשאר כמוצא אחורי מאחורי כפתור.
-    if (!code) { openLogin(); return; }
-    flushPending().then(function () { tryCode(code); });
+    if (code) { flushPending().then(function () { tryCode(code); }); return; }
+
+    // אין קוד שמור, אבל אולי יש כאן מלווה שנשאר מחובר מהפעם הקודמת.
+    var rt = lsGet(KEY_REFRESH);
+    if (!rt) { openLogin(); return; }
+    show("loading");
+    refreshSession(rt)
+      .then(function (sess) {
+        return asUser("me_coach_id", sess.access_token).then(function (coach) {
+          if (!coach) throw new Error("not-coach");
+          openAdmin(sess);
+        });
+      })
+      .catch(function () { lsDel(KEY_REFRESH); openLogin(); });
   }
 
   if ("serviceWorker" in navigator) {

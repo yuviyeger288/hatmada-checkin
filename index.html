@@ -84,6 +84,18 @@
       <button id="login-to-gate" class="btn ghost" type="button">יש לי קוד</button>
     </section>
 
+    <!-- ====== ניהול ======
+         מה שדף הצוות מראה, בתוך האפליקציה עצמה, כדי שלא יהיו שתי
+         כתובות ושתי כניסות. נפתח רק למי שנכנס עם חשבון מלווה. -->
+    <section id="admin" class="screen" hidden>
+      <div class="a-bar">
+        <span class="a-who" id="admin-who"></span>
+        <button id="admin-out" class="linkout" type="button">יציאה</button>
+      </div>
+      <h1 class="title">הלקוחות שלי</h1>
+      <div id="admin-list"></div>
+    </section>
+
     <!-- ====== שאלה 1 ====== -->
     <section id="q1" class="screen" hidden>
       <h1 class="title">הגעת היום לאימון?</h1>
