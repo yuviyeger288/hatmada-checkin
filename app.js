@@ -15,7 +15,7 @@
   function mine(base) { return base + "." + (state.code || "-"); }
 
   var el = function (id) { return document.getElementById(id); };
-  var screens = ["welcome", "gate", "home", "days", "q1", "q2", "q3", "tasks",
+  var screens = ["welcome", "gate", "login", "home", "days", "q1", "q2", "q3", "tasks",
                  "board", "loop", "stack", "env", "deck", "loading"];
 
   var STEP = { q1: 1, q2: 2, q3: 3 };
@@ -130,6 +130,106 @@
     show("gate");
     el("gate-code").focus();
   }
+
+  /* ================= כניסה עם שם משתמש =================
+     הכניסה לא מחליפה את הקוד — היא מסתיימת בו. מי שנכנס עם שם משתמש
+     מקבל את הקוד שלו מהשרת, ומשם האפליקציה עובדת בדיוק כמו תמיד:
+     אותן פונקציות, אותו אחסון, אותם נתונים. ולכן גם מי שכבר באמצע
+     התוכנית ממשיך מאיפה שהוא, בלי שום העברה.
+
+     שם משתמש ולא מייל: Supabase דורש כתובת, ולכן שם משתמש נשמר אצלו
+     כ-<שם>@hatmada.local — דומיין שלא קיים. המייל האמיתי של הלקוח
+     לא נכנס למערכת. */
+
+  var USER_DOMAIN = "@hatmada.local";
+
+  function loginMsg(text) {
+    var m = el("login-msg");
+    if (text) { m.textContent = text; m.hidden = false; }
+    else { m.hidden = true; }
+  }
+
+  function openLogin(message) {
+    loginMsg(message || null);
+    show("login");
+    el("login-user").focus();
+  }
+
+  function base() {
+    return (window.CONFIG || {}).SUPABASE_URL.replace(/\/+$/, "");
+  }
+
+  function signIn(user, pass) {
+    var cfg = window.CONFIG || {};
+    return fetch(base() + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": cfg.SUPABASE_ANON_KEY },
+      body: JSON.stringify({ email: user + USER_DOMAIN, password: pass })
+    }).then(function (r) {
+      return r.json().then(function (b) {
+        if (!r.ok || !b.access_token) throw new Error("bad-login");
+        return b.access_token;
+      });
+    });
+  }
+
+  // קריאה בשם המשתמש המחובר, ולא עם המפתח הציבורי
+  function asUser(fn, token) {
+    var cfg = window.CONFIG || {};
+    return fetch(base() + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": cfg.SUPABASE_ANON_KEY,
+        "Authorization": "Bearer " + token
+      },
+      body: "{}"
+    }).then(function (r) {
+      if (!r.ok) throw new Error("http-" + r.status);
+      return r.json();
+    });
+  }
+
+  el("gate-to-login").addEventListener("click", function () { openLogin(); });
+  el("login-to-gate").addEventListener("click", function () { openGate(); });
+
+  el("login-pass").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") el("login-go").click();
+  });
+
+  el("login-go").addEventListener("click", function () {
+    var user = el("login-user").value.trim().toLowerCase();
+    var pass = el("login-pass").value;
+    if (!user || !pass) return;
+
+    loginMsg(null);
+    show("loading");
+
+    signIn(user, pass)
+      .then(function (token) {
+        return asUser("app_my_code", token).then(function (code) {
+          // מלווה או מנהל שמקליד כאן את הפרטים שלו אין לו מסלול,
+          // ולכן אומרים לו לאן ללכת במקום "סיסמה שגויה".
+          if (!code) return asUser("me_is_admin", token).then(function (adm) {
+            throw new Error(adm ? "staff" : "no-client");
+          });
+          return String(code);
+        });
+      })
+      .then(function (code) {
+        el("login-pass").value = "";
+        tryCode(code);
+      })
+      .catch(function (e) {
+        el("login-pass").value = "";
+        var why = e && e.message;
+        openLogin(
+          why === "staff"     ? "זאת כניסה של מלווה. הניהול נמצא בדף הצוות." :
+          why === "no-client" ? "המשתמש הזה עוד לא מחובר למסלול. תשאל את יובל." :
+                                "שם המשתמש או הסיסמה לא נכונים."
+        );
+      });
+  });
 
   el("gate-go").addEventListener("click", function () {
     var v = el("gate-code").value.trim().toLowerCase();

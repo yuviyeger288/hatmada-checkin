@@ -66,6 +66,22 @@
              autocomplete="off" spellcheck="false" placeholder="קוד">
       <p id="gate-msg" class="msg" hidden></p>
       <button id="gate-go" class="btn">המשך</button>
+      <button id="gate-to-login" class="btn ghost" type="button">יש לי שם משתמש וסיסמה</button>
+    </section>
+
+    <!-- ====== כניסה עם שם משתמש ======
+         תוספת לקוד, לא החלפה שלו. מי שנכנס פעם אחת נשאר מחובר כמו
+         קודם, כי הכניסה מסתיימת באותו קוד שהאפליקציה עבדה איתו תמיד. -->
+    <section id="login" class="screen" hidden>
+      <h1 class="title">כניסה</h1>
+      <p class="sub">שם המשתמש והסיסמה שקיבלת.</p>
+      <input id="login-user" class="field" type="text" inputmode="latin" autocapitalize="off"
+             autocomplete="username" spellcheck="false" placeholder="שם משתמש">
+      <input id="login-pass" class="field" type="password"
+             autocomplete="current-password" placeholder="סיסמה">
+      <p id="login-msg" class="msg" hidden></p>
+      <button id="login-go" class="btn">כניסה</button>
+      <button id="login-to-gate" class="btn ghost" type="button">יש לי קוד</button>
     </section>
 
     <!-- ====== שאלה 1 ====== -->
