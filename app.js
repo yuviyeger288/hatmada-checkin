@@ -1817,6 +1817,118 @@
     });
   }
 
+  /* ---- מה הוא עשה בשיעורים ----
+     התרגילים נשמרים ב-answers לפי task_key, חוץ מלוח ההרגלים שיושב
+     בטבלה משלו. כל בלוק מראה קודם את התוצר של התרגיל ורק אחר כך את
+     הדרך אליו, כי התוצר הוא מה שמדברים עליו בשיחה. */
+
+  var A_TASK_NAME = {
+    loop:  "לולאת ההרגל",
+    stack: "צימוד הרגלים",
+    env:   "עיצוב הסביבה"
+  };
+
+  var A_LOOP_Q = [
+    ["cue",      "גירוי · מה מזכיר לו"],
+    ["crave",    "חשק · למה זה חשוב לו"],
+    ["response", "תגובה · הפעולה עצמה"],
+    ["reward",   "תגמול · מה הוא מקבל אחרי"]
+  ];
+
+  function aTaskHead(title, done) {
+    var top = node("div", "a-row-top");
+    top.appendChild(node("span", "a-day", title));
+    top.appendChild(node("span", "a-tag " + (done ? "yes" : "none"), done ? "הושלם" : "באמצע"));
+    return top;
+  }
+
+  function aUntouched(box) {
+    box.appendChild(node("p", "a-empty", "עוד לא נגע בזה."));
+    return box;
+  }
+
+  function aLoopBlock(row) {
+    var box = node("div", "a-row");
+    box.appendChild(aTaskHead(A_TASK_NAME.loop, row && row.done));
+    var d = (row && row.data) || {};
+    var any = A_LOOP_Q.some(function (q) { return d[q[0]]; }) || d.broken;
+    if (!any) return aUntouched(box);
+
+    // השלב השבור הוא התוצר של המשימה, ולכן הוא ראשון ולא אחרון.
+    if (d.broken) {
+      var hit = A_LOOP_Q.filter(function (q) { return q[0] === d.broken; })[0];
+      box.appendChild(aSaid("השלב השבור", hit ? hit[1].split(" · ")[0] : String(d.broken)));
+    }
+    if (d.why) box.appendChild(aSaid("למה דווקא הוא", d.why));
+    A_LOOP_Q.forEach(function (q) {
+      if (d[q[0]]) box.appendChild(aSaid(q[1], d[q[0]]));
+    });
+    return box;
+  }
+
+  function aStackBlock(row) {
+    var box = node("div", "a-row");
+    box.appendChild(aTaskHead(A_TASK_NAME.stack, row && row.done));
+    var rows = (((row && row.data) || {}).rows || []).filter(function (r) {
+      return String(r.after || "").trim() || String(r.then || "").trim();
+    });
+    if (!rows.length) return aUntouched(box);
+    // המשפט מורכב בחזרה בדיוק כפי שהלקוח בנה אותו במסך שלו,
+    // "אחרי ש..., אני...", ולא מפורק לתווית וערך.
+    rows.forEach(function (r) {
+      box.appendChild(node("p", "a-said",
+        "אחרי ש" + (r.after || "—") + ", אני " + (r.then || "—")));
+    });
+    return box;
+  }
+
+  function aEnvBlock(row) {
+    var box = node("div", "a-row");
+    box.appendChild(aTaskHead(A_TASK_NAME.env, row && row.done));
+    var d = (row && row.data) || {};
+    var adds = (d.adds || []).filter(function (r) { return String(r.what || "").trim(); });
+    var rm = String(d.rm || "").trim();
+    if (!adds.length && !rm) return aUntouched(box);
+    adds.forEach(function (r) {
+      box.appendChild(aSaid("להוסיף", r.what + (r.where ? " · " + r.where : "")));
+    });
+    if (rm) box.appendChild(aSaid("להוריד", rm + (d.rmWhere ? " · " + d.rmWhere : "")));
+    return box;
+  }
+
+  function aBoardBlock(row) {
+    var box = node("div", "a-row");
+    box.appendChild(aTaskHead("לוח ההרגלים", row && row.phase === "done"));
+    var items = (row && row.items) || [];
+    if (!items.length) return aUntouched(box);
+
+    var count = function (sym) {
+      return items.filter(function (i) { return i.m === sym; }).length;
+    };
+    box.appendChild(node("p", "a-empty",
+      items.length + " שורות \u00b7 " + count("+") + " \u05e4\u05dc\u05d5\u05e1 \u00b7 " +
+      count("=") + " \u05e0\u05d9\u05d8\u05e8\u05dc\u05d9 \u00b7 " + count("\u2212") + " \u05de\u05d9\u05e0\u05d5\u05e1"));
+
+    items.forEach(function (it) {
+      var line = node("div", "a-row-top");
+      line.appendChild(node("span", "a-said", it.t));
+      line.appendChild(node("span",
+        "a-tag " + (it.m === "+" ? "yes" : it.m === "\u2212" ? "no" : "none"), it.m || "\u2014"));
+      box.appendChild(line);
+    });
+    return box;
+  }
+
+  function aTasks(box, answers, board) {
+    box.innerHTML = "";
+    var by = {};
+    (answers || []).forEach(function (r) { by[r.task_key] = r; });
+    box.appendChild(aLoopBlock(by.loop));
+    box.appendChild(aStackBlock(by.stack));
+    box.appendChild(aEnvBlock(by.env));
+    box.appendChild(aBoardBlock(board));
+  }
+
   function adminCard(c) {
     var card = node("div", "a-card");
 
@@ -1870,6 +1982,40 @@
 
     card.appendChild(btn);
     card.appendChild(log);
+
+    var tbox = node("div", "a-log");
+    tbox.hidden = true;
+
+    var tShut = "מה הוא עשה בשיעורים \u2193";
+    var tBtn  = node("button", "a-toggle", tShut);
+    tBtn.type = "button";
+    var tLoaded = false;
+
+    tBtn.addEventListener("click", function () {
+      if (!tbox.hidden) { tbox.hidden = true; tBtn.textContent = tShut; return; }
+      tbox.hidden = false;
+      tBtn.textContent = "סגור \u2191";
+      if (tLoaded) return;
+      tLoaded = true;
+      tbox.innerHTML = "";
+      tbox.appendChild(node("p", "a-empty", "טוען\u2026"));
+
+      var cid = encodeURIComponent(c.id);
+      Promise.all([
+        apiGet("answers?select=task_key,data,done&client_id=eq." + cid),
+        // לוח ההרגלים בטבלה נפרדת. אם היא לא נגישה, השאר עדיין נטען.
+        apiGet("boards?select=items,phase&client_id=eq." + cid)
+          .catch(function () { return []; })
+      ]).then(function (res) {
+        aTasks(tbox, res[0] || [], (res[1] || [])[0] || null);
+      }).catch(function () {
+        tbox.innerHTML = "";
+        tbox.appendChild(node("p", "a-empty", "לא הצלחתי לטעון."));
+      });
+    });
+
+    card.appendChild(tBtn);
+    card.appendChild(tbox);
     return card;
   }
 
