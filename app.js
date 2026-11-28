@@ -590,6 +590,29 @@
 
   function taskOpen(key) { return openTasks.indexOf(key) !== -1; }
 
+  /* תרגיל אפשר לפתוח משני מקומות — מהשיעור שלו ומהכלים — ולכן
+     "חזרה" חייבת לדעת מאיפה הגיעו. בלי זה מי שפתח כלי מהכלים נזרק
+     לשיעורים, שזה לא המקום שבו היה. */
+  var taskFrom = "tasks";
+
+  function backLabel() {
+    return taskFrom === "tools" ? "לכלים" : "לשיעורים";
+  }
+
+  function setBackLabels() {
+    var txt = "← " + backLabel();
+    ["board-back", "loop-back", "stack-back", "env-back"].forEach(function (id) {
+      var b = el(id);
+      if (b) b.textContent = txt;
+    });
+  }
+
+  function backToList() {
+    if (taskFrom === "tools") { renderTools(); show("tools"); return; }
+    renderTasks();
+    show("tasks");
+  }
+
   /* ---- שיעורים ----
      המסלול לפי הסדר. כל שיעור נושא את החומר שלו — הסרטון והמצגת —
      ואת התרגיל שיצא ממנו. קודם החומר היה קבור בתוך התרגיל, וזה אמר
@@ -643,6 +666,8 @@
   }
 
   function renderTasks() {
+    taskFrom = "tasks";
+    setBackLabels();
     var any = ["loop", "board", "stack", "env"].some(taskOpen);
     el("tasks-title").textContent = any ? "המסלול שלך" : "השיעור הראשון ייפתח בקרוב";
 
@@ -673,6 +698,8 @@
      אותם תוצרים, בלי חלוקה לשבועות. מוצגים רק אלה שכבר נפתחו: כלי
      נעול הוא לא כלי, והוא כבר מופיע בשיעורים עם התווית שלו. */
   function renderTools() {
+    taskFrom = "tools";
+    setBackLabels();
     var open = ["loop", "board", "stack", "env"].filter(taskOpen);
     el("tools-title").textContent = open.length ? "מה שבנית" : "כאן יישב מה שתבנה";
 
@@ -708,7 +735,7 @@
                         note: n + " מוכנים.", onOpen: openStack });
     }
     return taskCard({ open: true, title: "צימוד הרגלים", tag: "לא התחיל",
-                      note: "משפט ״אחרי ש..., אני...״ לכל אימון השבוע.",
+                      note: "משפט ״אחרי ש..., אני...״ לכל תרגול השבוע.",
                       onOpen: openStack });
   }
 
@@ -1044,8 +1071,7 @@
   });
 
   el("board-back").addEventListener("click", function () {
-    renderTasks();
-    show("tasks");
+    backToList();
   });
 
   /* ================= לולאת ההרגל =================
@@ -1330,8 +1356,7 @@
   });
 
   el("loop-back").addEventListener("click", function () {
-    renderTasks();
-    show("tasks");
+    backToList();
   });
 
   /* ================= משימה 3 · צימוד הרגלים =================
@@ -1390,7 +1415,7 @@
 
     var head = document.createElement("p");
     head.className = "q-head";
-    head.innerHTML = "<b>אימון " + (i + 1) + "</b>";
+    head.innerHTML = "<b>תרגול " + (i + 1) + "</b>";
     wrap.appendChild(head);
 
     [["s-after", "אחרי ש...", "פעולה שאני עושה ממילא, ברגע מדויק"],
@@ -1417,7 +1442,7 @@
       ? "נשלח למלווה."
       : (n ? n + " אימונים מוכנים." : "משפט אחד לפחות, ואפשר לסיים.");
     var btn = el("stack-done");
-    btn.textContent = a.done ? "חזרה למשימות" : "סיימתי";
+    btn.textContent = a.done ? "חזרה " + backLabel() : "סיימתי";
     btn.disabled = !a.done && !n;
   }
 
@@ -1462,8 +1487,7 @@
   });
 
   el("stack-back").addEventListener("click", function () {
-    renderTasks();
-    show("tasks");
+    backToList();
   });
 
   /* ================= משימה 4 · עיצוב הסביבה =================
@@ -1560,7 +1584,7 @@
       ? "נשלח למלווה."
       : (n ? n + " גירויים שבנית. כמה שיותר." : "גירוי אחד לפחות, ואפשר לסיים.");
     var btn = el("env-done");
-    btn.textContent = a.done ? "חזרה למשימות" : "סיימתי";
+    btn.textContent = a.done ? "חזרה " + backLabel() : "סיימתי";
     btn.disabled = !a.done && !n;
   }
 
@@ -1613,8 +1637,7 @@
   });
 
   el("env-back").addEventListener("click", function () {
-    renderTasks();
-    show("tasks");
+    backToList();
   });
 
   /* הקישורים של שבוע 2 — אותו כלל כמו בשבוע 1: ריק = לא מוצג כלל,
